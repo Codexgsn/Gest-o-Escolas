@@ -35,7 +35,7 @@ const { firebaseApp, auth, firestore, database } = initializeFirebase();
 export { firebaseApp, auth, firestore, database };
 
 // Barrel file for exporting all provider hooks and components
-export { FirebaseProvider, FirebaseClientProvider } from './client-provider';
+export { FirebaseClientProvider } from './client-provider';
 export { useFirebase, useAuth, useFirestore, useFirebaseApp, useUser } from './provider';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';
