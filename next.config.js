@@ -36,8 +36,6 @@ const nextConfig = {
       },
     ],
   },
-  // Add the output export configuration for static deployment
-  output: 'export',
 };
 
 module.exports = nextConfig;

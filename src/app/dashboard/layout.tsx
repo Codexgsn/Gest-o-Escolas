@@ -8,24 +8,33 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function ProtectedLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Para a exportação estática, o login não é funcional.
-  // Esta lógica pode ser removida ou adaptada se a autenticação
-  // for tratada de outra forma (por exemplo, em uma SPA com API).
   const { currentUser, isLoaded } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Na versão estática, não há login, então essa verificação pode ser comentada
-    // if (isLoaded && !currentUser) {
-    //   router.push('/');
-    // }
+    // Para a versão estática, se o usuário não for encontrado no carregamento,
+    // redireciona para a página de login.
+    if (isLoaded && !currentUser) {
+      router.push('/');
+    }
   }, [currentUser, isLoaded, router]);
+
+  if (!isLoaded || !currentUser) {
+    return (
+       <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
+          <Skeleton className="h-16 w-16 rounded-full mb-4" />
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
+       </div>
+    );
+  }
 
   return (
     <ThemeProvider
