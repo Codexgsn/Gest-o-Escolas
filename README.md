@@ -4,6 +4,8 @@ Este repositório contém o código completo e finalizado da sua aplicação de 
 
 O código está 100% pronto, mas o ambiente do Firebase Studio não consegue se conectar ao GitHub para enviar os arquivos. Siga os passos abaixo para enviar o código a partir do seu próprio computador.
 
+Para uma descrição completa e detalhada de todas as funcionalidades do sistema, por favor, consulte o arquivo [**FUNCIONALIDADES.md**](./FUNCIONALIDADES.md).
+
 ---
 
 ## Como Enviar este Código para o GitHub (Passo a Passo)
