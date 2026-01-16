@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/useAuth"; // Import the new hook
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from 'date-fns/locale';
@@ -40,9 +41,6 @@ import { Calendar as CalendarIcon } from "lucide-react"
 import type { Resource } from "@/lib/definitions"
 import { createReservationAction } from "@/app/actions/reservations"
 import type { SchoolSettings } from "@/app/actions/settings"
-
-// Dummy current user ID. Replace with your actual auth logic.
-const DUMMY_USER_ID = 'simulated-admin-id';
 
 const formSchema = z.object({
   resourceId: z.string().min(1, { message: "Por favor, selecione um recurso." }),
@@ -79,6 +77,7 @@ interface NewReservationFormProps {
 export function NewReservationForm({ resources, settings, initialResourceId }: NewReservationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { user: authUser, loading: authLoading } = useAuth(); // Use the auth hook
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -94,14 +93,18 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
     }
   }, [initialResourceId, form]);
 
-
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await createReservationAction(values, DUMMY_USER_ID);
+    if (!authUser) {
+        toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado para criar uma reserva." });
+        return;
+    }
+
+    const result = await createReservationAction(values, authUser.uid);
 
     if (result.success) {
       toast({ title: "Sucesso", description: result.message });
       router.push("/dashboard/reservations");
-      router.refresh(); // Ensure the list page shows the new reservation
+      router.refresh();
     } else {
       toast({ variant: "destructive", title: "Erro", description: result.message });
     }
@@ -119,6 +122,14 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
     }
     return false;
   };
+  
+  if (authLoading) {
+      return <p>Carregando...</p>; // Show a loading state while checking auth
+  }
+  
+  if (!authUser) {
+      return <p>Por favor, faça login para continuar.</p>;
+  }
 
   return (
     <Form {...form}>
@@ -220,7 +231,7 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
             </FormItem>
           )}
         />
-        <Button type="submit">Verificar Disponibilidade &amp; Reservar</Button>
+        <Button type="submit" disabled={authLoading}>Verificar Disponibilidade &amp; Reservar</Button>
       </form>
     </Form>
   );

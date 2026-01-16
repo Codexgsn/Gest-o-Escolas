@@ -5,7 +5,7 @@ import AppSidebar from '@/components/app-sidebar';
 import Header from '@/components/header';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/useAuth'; // Corrected import path
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,18 +15,18 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser, isLoaded } = useAuth();
+  const { user, loading } = useAuth(); // Using the standardized hook
   const router = useRouter();
 
   useEffect(() => {
-    // Para a versão estática, se o usuário não for encontrado no carregamento,
-    // redireciona para a página de login.
-    if (isLoaded && !currentUser) {
+    // If the auth state is not loading and there is no user, redirect to login.
+    if (!loading && !user) {
       router.push('/');
     }
-  }, [currentUser, isLoaded, router]);
+  }, [user, loading, router]);
 
-  if (!isLoaded || !currentUser) {
+  // Show a loading skeleton while the auth state is being determined.
+  if (loading || !user) {
     return (
        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-background">
           <Skeleton className="h-16 w-16 rounded-full mb-4" />
