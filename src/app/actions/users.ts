@@ -1,13 +1,13 @@
 
-'use client'
+'use server';
 
 import { z } from "zod"
-import { ref, set, get, child, push, remove, query, orderByChild, equalTo, update } from "firebase/database";
+import { db } from '@vercel/postgres';
+import { revalidatePath } from 'next/cache';
+import { fetchUserById } from '@/lib/data';
+import { hash } from 'bcrypt'; // We'll use bcrypt for hashing passwords
 
-import { database } from "@/firebase";
-import { getUserById } from './data';
-import { sendWelcomeEmail } from '@/ai/flows/send-welcome-email';
-
+// --- Schemas for Validation ---
 const userCreationSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
@@ -16,7 +16,16 @@ const userCreationSchema = z.object({
   avatar: z.string().url().optional().or(z.literal("")),
 });
 
+const userUpdateSchema = z.object({
+  id: z.string(),
+  name: z.string().min(2),
+  email: z.string().email(),
+  role: z.enum(["Admin", "Usuário"]),
+  avatar: z.string().url().optional().or(z.literal("")),
+});
 
+
+// --- User Creation ---
 export async function createUserAction(
     values: unknown,
     currentUserId: string | null
@@ -28,9 +37,8 @@ export async function createUserAction(
 
     const { name, email, role, password, avatar } = validatedFields.data;
 
-    // Public registration doesn't require an admin
     if (currentUserId) {
-        const currentUser = await getUserById(currentUserId);
+        const currentUser = await fetchUserById(currentUserId);
         if (!currentUser || currentUser.role !== 'Admin') {
             return { success: false, message: "Permissão negada." };
         }
@@ -38,46 +46,28 @@ export async function createUserAction(
     
     try {
         // Check if user already exists
-        const usersRef = ref(database, 'users');
-        const existingUserQuery = query(usersRef, orderByChild('email'), equalTo(email));
-        const snapshot = await get(existingUserQuery);
-        if (snapshot.exists()) {
+        const existingUser = await db.sql`SELECT * FROM users WHERE email = ${email}`;
+        if (existingUser.rowCount > 0) {
             return { success: false, message: "Um usuário com este email já existe." };
         }
 
-        const newUserId = push(usersRef).key;
-        if (!newUserId) {
-            throw new Error("Failed to generate a new user ID.");
-        }
+        const hashedPassword = await hash(password, 10);
 
-        const newUserRef = ref(database, `users/${newUserId}`);
-        await set(newUserRef, {
-            name,
-            email,
-            role,
-            password, // In a real app, hash this password!
-            avatar: avatar || `https://i.pravatar.cc/150?u=${email}`
-        });
+        await db.sql`
+            INSERT INTO users (name, email, role, password, avatar)
+            VALUES (${name}, ${email}, ${role}, ${hashedPassword}, ${avatar || `https://i.pravatar.cc/150?u=${email}`})
+        `;
 
-        // AI-driven welcome email (optional)
-        // await sendWelcomeEmail({ name, email });
-
+        revalidatePath('/dashboard/users');
         return { success: true, message: `Usuário ${name} criado com sucesso!` };
 
     } catch (error) {
-        console.error("Firebase error:", error);
+        console.error("Database error:", error);
         return { success: false, message: "Falha ao criar o usuário." };
     }
 }
 
-const userUpdateSchema = z.object({
-  id: z.string(),
-  name: z.string().min(2),
-  email: z.string().email(),
-  role: z.enum(["Admin", "Usuário"]),
-  avatar: z.string().url().optional().or(z.literal("")),
-});
-
+// --- User Update ---
 export async function updateUserAction(
     values: unknown,
     currentUserId: string | null
@@ -90,93 +80,47 @@ export async function updateUserAction(
     if (!currentUserId) {
         return { success: false, message: "Usuário não autenticado." };
     }
-    const currentUser = await getUserById(currentUserId);
+    const currentUser = await fetchUserById(currentUserId);
      if (!currentUser || currentUser.role !== 'Admin') {
         return { success: false, message: "Permissão negada." };
     }
 
     try {
-        const { id, ...updateData } = validatedFields.data;
-        const userRef = ref(database, `users/${id}`);
+        const { id, name, email, role, avatar } = validatedFields.data;
+        
+        await db.sql`
+            UPDATE users
+            SET name = ${name}, email = ${email}, role = ${role}, avatar = ${avatar}
+            WHERE id = ${id}
+        `;
 
-        // We must fetch the existing password to avoid overwriting it
-        const existingUserSnapshot = await get(userRef);
-        if (!existingUserSnapshot.exists()) {
-             return { success: false, message: "Usuário não encontrado." };
-        }
-        const existingPassword = existingUserSnapshot.val().password;
-
-        await set(userRef, {
-            ...updateData,
-            password: existingPassword // Preserve the password
-        });
-
-        return { success: true, message: `Usuário ${updateData.name} atualizado com sucesso!` };
+        revalidatePath('/dashboard/users');
+        return { success: true, message: `Usuário ${name} atualizado com sucesso!` };
 
     } catch (error) {
-        console.error("Firebase error:", error);
+        console.error("Database error:", error);
         return { success: false, message: "Falha ao atualizar o usuário." };
     }
 }
 
-const passwordUpdateSchema = z.object({
-    userIdToUpdate: z.string(),
-    newPassword: z.string().min(8),
-    currentUserId: z.string(),
-});
-
-export async function updateUserPasswordAction(values: unknown) {
-     const validatedFields = passwordUpdateSchema.safeParse(values);
-    if (!validatedFields.success) {
-        return { success: false, message: "Dados inválidos." };
-    }
-
-    const { userIdToUpdate, newPassword, currentUserId } = validatedFields.data;
-    
-    try {
-        const currentUser = await getUserById(currentUserId);
-        const userToUpdate = await getUserById(userIdToUpdate);
-
-        if (!userToUpdate) {
-            return { success: false, message: "Usuário alvo não encontrado." };
-        }
-
-        // Check permissions: Admin can change anyone's password except other admins. Users can change their own.
-        const isAdmin = currentUser?.role === 'Admin';
-        const isSelf = currentUser?.id === userIdToUpdate;
-        const targetIsAdmin = userToUpdate?.role === 'Admin';
-
-        if (!isSelf && !(isAdmin && !targetIsAdmin)) {
-             return { success: false, message: "Permissão negada para alterar esta senha." };
-        }
-        
-        const userRef = ref(database, `users/${userIdToUpdate}/password`);
-        await set(userRef, newPassword); // Again, HASH in real app
-
-        return { success: true, message: "Senha atualizada com sucesso!" };
-
-    } catch (error) {
-        return { success: false, message: "Falha ao atualizar a senha." };
-    }
-}
-
-
+// --- User Deletion ---
 export async function deleteUserAction(userId: string, currentUserId: string | null) {
   if (!currentUserId) {
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const currentUser = await getUserById(currentUserId);
+  const currentUser = await fetchUserById(currentUserId);
   if (!currentUser || currentUser.role !== 'Admin') {
       return { success: false, message: "Permissão negada." };
   }
+
    if (userId === currentUserId) {
     return { success: false, message: "Você não pode excluir sua própria conta." };
   }
 
   try {
-      const userRef = ref(database, `users/${userId}`);
-      await remove(userRef);
+      await db.sql`DELETE FROM users WHERE id = ${userId}`;
+      revalidatePath('/dashboard/users');
       return { success: true, message: "Usuário excluído com sucesso." };
   } catch (error) {
       return { success: false, message: "Falha ao excluir o usuário." };
@@ -187,7 +131,7 @@ export async function deleteMultipleUsersAction(userIds: string[], currentUserId
     if (!currentUserId) {
         return { success: false, message: "Usuário não autenticado." };
     }
-    const currentUser = await getUserById(currentUserId);
+    const currentUser = await fetchUserById(currentUserId);
     if (!currentUser || currentUser.role !== 'Admin') {
         return { success: false, message: "Permissão negada." };
     }
@@ -197,46 +141,12 @@ export async function deleteMultipleUsersAction(userIds: string[], currentUserId
     }
 
     try {
-        const updates: { [key: string]: null } = {};
-        userIds.forEach(id => {
-            updates[`/users/${id}`] = null;
-        });
-        await update(ref(database), updates);
-
+        const query = `DELETE FROM users WHERE id IN (${userIds.map(id => `'${id}'`).join(',')})`;
+        await db.sql.query(query);
+        
+        revalidatePath('/dashboard/users');
         return { success: true, message: "Usuários selecionados excluídos com sucesso." };
     } catch (error) {
         return { success: false, message: "Falha ao excluir usuários." };
-    }
-}
-
-const resetPasswordSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
-
-export async function resetPasswordAction(values: unknown) {
-    const validatedFields = resetPasswordSchema.safeParse(values);
-    if (!validatedFields.success) {
-        return { success: false, message: "Dados inválidos." };
-    }
-    
-    const { email, password } = validatedFields.data;
-
-    try {
-        const usersRef = ref(database, 'users');
-        const q = query(usersRef, orderByChild('email'), equalTo(email));
-        const snapshot = await get(q);
-
-        if (!snapshot.exists()) {
-             return { success: false, message: "Nenhum usuário encontrado com este email." };
-        }
-
-        const userId = Object.keys(snapshot.val())[0];
-        const userPasswordRef = ref(database, `users/${userId}/password`);
-        await set(userPasswordRef, password); // HASH THIS in a real app
-
-        return { success: true, message: "Senha redefinida com sucesso." };
-    } catch (error) {
-        return { success: false, message: "Falha ao redefinir a senha." };
     }
 }

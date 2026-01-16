@@ -1,6 +1,4 @@
 
-'use client';
-
 import Link from 'next/link';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import {
@@ -35,9 +33,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import type { User } from '@/lib/data';
+import type { User } from '@/lib/definitions';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,10 +53,8 @@ import {
   deleteMultipleUsersAction,
 } from '@/app/actions/users';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useAuth } from '@/hooks/use-auth';
+import { fetchUsers } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { database } from '@/firebase';
-import { ref, onValue } from 'firebase/database';
 
 
 function UserRow({
@@ -159,17 +155,11 @@ function UserRow({
 
 function UsersTable({ 
   users,
-  onUserDeleted,
-  onMultipleUsersDeleted 
 }: { 
   users: User[],
-  onUserDeleted: (id: string) => void,
-  onMultipleUsersDeleted: (ids: string[]) => void
 }) {
   const { toast } = useToast();
-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  const { currentUser } = useAuth();
-  const currentUserId = currentUser?.id ?? null;
+  const [selectedUserIds, setSelectedUserIds] = React.useState<string[]>([]);
 
   const handleToggleSelect = (userId: string, selected: boolean) => {
     setSelectedUserIds((prev) =>
@@ -182,41 +172,11 @@ function UsersTable({
   };
 
   const handleDeleteUser = async (userId: string) => {
-    const result = await deleteUserAction(userId, currentUserId);
-
-    if (result.success) {
-      toast({
-        title: 'Usuário Excluído',
-        description: result.message,
-      });
-      onUserDeleted(userId);
-      setSelectedUserIds([]);
-    } else {
-      toast({
-        title: 'Erro',
-        description: result.message,
-        variant: 'destructive',
-      });
-    }
+    // TODO: Implement user deletion with server action
   };
 
   const handleDeleteMultiple = async () => {
-    const result = await deleteMultipleUsersAction(selectedUserIds, currentUserId);
-
-    if (result.success) {
-      toast({
-        title: 'Usuários Excluídos',
-        description: result.message,
-      });
-      onMultipleUsersDeleted(selectedUserIds);
-      setSelectedUserIds([]);
-    } else {
-      toast({
-        title: 'Erro',
-        description: result.message,
-        variant: 'destructive',
-      });
-    }
+    // TODO: Implement multiple user deletion with server action
   };
 
   const numSelected = selectedUserIds.length;
@@ -312,70 +272,8 @@ function UsersTable({
   );
 }
 
-
-function UsersPageSkeleton() {
-    return (
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-8 w-1/2 mb-2" />
-                <Skeleton className="h-4 w-3/4" />
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="flex items-center space-x-4 p-2">
-                            <Skeleton className="h-6 w-6" />
-                            <div className="flex-1 flex items-center space-x-4">
-                               <Skeleton className="h-10 w-10 rounded-full" />
-                               <div className="flex-1 space-y-2">
-                                  <Skeleton className="h-4 w-1/2" />
-                                   <Skeleton className="h-3 w-1/3" />
-                               </div>
-                            </div>
-                             <div className="flex-1">
-                                <Skeleton className="h-4 w-1/4" />
-                             </div>
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
-export default function UsersPage() {
-    const [users, setUsers] = useState<User[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        const usersRef = ref(database, 'users');
-        const unsubscribe = onValue(usersRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const userList = Object.keys(data).map(key => ({
-                    id: key,
-                    ...data[key]
-                }));
-                setUsers(userList);
-            } else {
-                setUsers([]);
-            }
-            setIsLoading(false);
-        }, (error) => {
-            console.error(error);
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, []);
-
-    const handleUserDeleted = (deletedUserId: string) => {
-        // The real-time listener will handle the update automatically
-    };
-
-    const handleMultipleUsersDeleted = (deletedUserIds: string[]) => {
-       // The real-time listener will handle the update automatically
-    };
+export default async function UsersPage() {
+    const users = await fetchUsers();
 
     return (
         <>
@@ -404,15 +302,7 @@ export default function UsersPage() {
                 </Button>
                 </div>
             </div>
-            {isLoading ? (
-                <UsersPageSkeleton />
-            ) : (
-                <UsersTable 
-                    users={users} 
-                    onUserDeleted={handleUserDeleted}
-                    onMultipleUsersDeleted={handleMultipleUsersDeleted}
-                />
-            )}
+            <UsersTable users={users} />
         </>
     );
 }

@@ -1,6 +1,4 @@
 
-'use client'
-
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -20,23 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getSettings } from "@/app/actions/settings";
-import type { Resource } from "@/lib/data";
+import type { Resource } from "@/lib/definitions";
 import { Badge } from "@/components/ui/badge";
 import { Users, MapPin, Wrench, Package, ListFilter, Tag } from "lucide-react";
-import React, { useState, useEffect, useMemo } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { database } from "@/firebase";
-import { ref, onValue } from "firebase/database";
+import { fetchResources, fetchResourceTags } from "@/lib/data";
+import { FilterDropdown } from "@/components/resources/filter-dropdown";
+
 
 function ResourceCard({ resource }: { resource: Resource }) {
   return (
@@ -55,7 +42,7 @@ function ResourceCard({ resource }: { resource: Resource }) {
       </CardHeader>
       <CardContent className="flex-1 p-6">
         <div className="flex flex-wrap gap-1 mb-2">
-            <Badge variant="secondary" className="">{resource.type}</Badge>
+            <Badge variant="secondary">{resource.type}</Badge>
             {resource.tags?.map(tag => (
                 <Badge key={tag} variant="outline" className="font-normal">{tag}</Badge>
             ))}
@@ -91,75 +78,15 @@ function ResourceCard({ resource }: { resource: Resource }) {
   );
 }
 
-function ResourcesPageSkeleton() {
-    return (
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
-          {[...Array(8)].map((_, i) => (
-              <Card key={i}>
-                  <CardHeader className="p-0">
-                      <Skeleton className="h-48 w-full rounded-t-lg" />
-                  </CardHeader>
-                  <CardContent className="p-6">
-                      <Skeleton className="h-4 w-1/3 mb-4" />
-                      <Skeleton className="h-6 w-3/4 mb-4" />
-                      <div className="space-y-3">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-2/3" />
-                      </div>
-                  </CardContent>
-                  <CardFooter>
-                      <Skeleton className="h-10 w-full" />
-                  </CardFooter>
-              </Card>
-          ))}
-        </div>
-    )
-}
+export default async function ResourcesPage({ searchParams }: { searchParams?: { tags?: string | string[] }}) {
+  const selectedTags = 
+    typeof searchParams?.tags === 'string' ? [searchParams.tags] :
+    Array.isArray(searchParams?.tags) ? searchParams.tags : [];
 
-export default function ResourcesPage() {
-    const [allResources, setAllResources] = useState<Resource[]>([]);
-    const [availableTags, setAvailableTags] = useState<string[]>([]);
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        setIsLoading(true);
-        const resourcesRef = ref(database, 'resources');
-        const unSubResources = onValue(resourcesRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const list: Resource[] = Object.keys(data).map(key => ({ id: key, ...data[key] }));
-                setAllResources(list);
-            }
-            setIsLoading(false);
-        });
-
-        async function loadTags() {
-            const settingsData = await getSettings();
-            setAvailableTags(settingsData.resourceTags || []);
-        }
-        loadTags();
-
-        return () => {
-            unSubResources();
-        };
-    }, []);
-
-    const handleTagFilterChange = (tag: string, checked: boolean) => {
-        setSelectedTags(prev => 
-            checked ? [...prev, tag] : prev.filter(t => t !== tag)
-        );
-    };
-
-    const filteredResources = useMemo(() => {
-        if (selectedTags.length === 0) {
-            return allResources;
-        }
-        return allResources.filter(resource =>
-            selectedTags.every(tag => resource.tags?.includes(tag))
-        );
-    }, [allResources, selectedTags]);
+  const [resources, availableTags] = await Promise.all([
+    fetchResources(selectedTags),
+    fetchResourceTags()
+  ]);
 
   return (
     <>
@@ -185,62 +112,25 @@ export default function ResourcesPage() {
             <p className="text-muted-foreground mt-2">Navegue e reserve salas, laboratórios e equipamentos disponíveis.</p>
         </div>
         <div className="mt-4 md:mt-0">
-             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="w-full md:w-auto">
-                  <ListFilter className="mr-2 h-4 w-4" />
-                  Filtrar por Tags
-                  {selectedTags.length > 0 && <Badge variant="secondary" className="ml-2">{selectedTags.length}</Badge>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[250px]">
-                <DropdownMenuLabel>Selecione as tags</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {availableTags.length > 0 ? availableTags.map(tag => (
-                    <DropdownMenuCheckboxItem 
-                        key={tag} 
-                        checked={selectedTags.includes(tag)} 
-                        onCheckedChange={(checked) => handleTagFilterChange(tag, !!checked)}
-                    >
-                        {tag}
-                    </DropdownMenuCheckboxItem>
-                )) : (
-                    <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma tag disponível.</div>
-                )}
-                 {selectedTags.length > 0 && (
-                    <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setSelectedTags([])} className="text-destructive">
-                            Limpar filtros
-                        </DropdownMenuItem>
-                    </>
-                 )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <FilterDropdown availableTags={availableTags} selectedTags={selectedTags} />
         </div>
       </div>
 
-        {isLoading ? (
-            <ResourcesPageSkeleton />
-        ) : (
-            <>
-                {filteredResources.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
-                        {filteredResources.map((resource) => (
-                        <ResourceCard key={resource.id} resource={resource} />
-                        ))}
-                    </div>
-                ) : (
-                     <div className="text-center py-16">
-                        <Tag className="mx-auto h-12 w-12 text-muted-foreground" />
-                        <h3 className="mt-4 text-lg font-semibold">Nenhum Recurso Encontrado</h3>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                            Tente remover alguns filtros para ver mais resultados.
-                        </p>
-                    </div>
-                )}
-            </>
-        )}
+      {resources.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+              {resources.map((resource) => (
+              <ResourceCard key={resource.id} resource={resource} />
+              ))}
+          </div>
+      ) : (
+            <div className="text-center py-16">
+              <Tag className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-4 text-lg font-semibold">Nenhum Recurso Encontrado</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                  Tente remover alguns filtros para ver mais resultados.
+              </p>
+          </div>
+      )}
     </>
   );
 }

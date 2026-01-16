@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
-import React, { useState, useEffect } from "react"
+import React from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,8 +34,6 @@ import {
 } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { createUserAction } from "@/app/actions/users"
-import { useAuth } from "@/hooks/use-auth"
-
 
 const formSchema = z.object({
   name: z.string().min(2, { message: "O nome deve ter pelo menos 2 caracteres." }),
@@ -52,8 +50,6 @@ const formSchema = z.object({
 export default function NewUserPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { currentUser } = useAuth();
-  const currentUserId = currentUser?.id ?? null;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -68,9 +64,9 @@ export default function NewUserPage() {
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // We don't need to send confirmPassword to the server action
     const { confirmPassword, ...submissionValues } = values;
-    const result = await createUserAction(submissionValues, currentUserId)
+    // Since this is a public creation form for now, we pass null for the current user ID.
+    const result = await createUserAction(submissionValues, null)
 
     if (result.success) {
       toast({
@@ -92,7 +88,7 @@ export default function NewUserPage() {
       <CardHeader>
         <CardTitle>Adicionar Novo Usuário</CardTitle>
         <CardDescription>
-          Preencha o formulário para criar um novo usuário no sistema. Um e-mail de boas-vindas será enviado.
+          Preencha o formulário para criar um novo usuário no sistema.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -120,7 +116,7 @@ export default function NewUserPage() {
                   <FormControl>
                     <Input type="email" placeholder="Ex: joao.silva@example.com" {...field} />
                   </FormControl>
-                  <FormDescription>
+                   <FormDescription>
                     O usuário usará este email para fazer login.
                   </FormDescription>
                   <FormMessage />
@@ -161,7 +157,7 @@ export default function NewUserPage() {
                     <Input placeholder="https://example.com/avatar.png" {...field} />
                   </FormControl>
                   <FormDescription>
-                    Cole a URL de uma imagem para o perfil do usuário. Se deixado em branco, uma imagem padrão será usada.
+                     Se deixado em branco, uma imagem padrão será usada.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

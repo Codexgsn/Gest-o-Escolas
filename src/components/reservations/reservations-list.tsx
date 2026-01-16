@@ -1,0 +1,188 @@
+
+'use client'
+
+import { useState } from "react";
+import Link from "next/link";
+import { MoreHorizontal } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+import { cancelReservationAction } from "@/app/actions/reservations";
+import type { Reservation } from "@/lib/definitions";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from "@/components/ui/alert-dialog";
+
+
+type ReservationStatus = Reservation['status'];
+
+const statusVariant = (status: ReservationStatus) => {
+    switch (status) {
+        case 'Confirmada': return 'default';
+        case 'Pendente': return 'secondary';
+        case 'Cancelada': return 'destructive';
+        default: return 'outline';
+    }
+}
+
+interface ReservationsListProps {
+    reservations: Reservation[];
+    currentUserId: string;
+    isAdmin: boolean;
+}
+
+export function ReservationsList({ reservations, currentUserId, isAdmin }: ReservationsListProps) {
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleCancelReservation = async (reservationId: string) => {
+        const result = await cancelReservationAction(reservationId, currentUserId);
+
+        if (result.success) {
+            toast({
+                title: "Reserva Cancelada",
+                description: "A reserva foi cancelada com sucesso.",
+            });
+            router.refresh(); // Refreshes the Server Component and fetches the new data
+        } else {
+            toast({
+                title: "Erro",
+                description: result.message,
+                variant: 'destructive'
+            });
+        }
+    };
+
+    const getReservationsByStatus = (statuses: ReservationStatus[]) => {
+        return reservations.filter(r => statuses.includes(r.status));
+    }
+
+    const tabs = [
+        { value: 'all', label: 'Todas', data: reservations },
+        { value: 'confirmed', label: 'Confirmadas', data: getReservationsByStatus(['Confirmada']) },
+        { value: 'pending', label: 'Pendentes', data: getReservationsByStatus(['Pendente']) },
+        { value: 'cancelled', label: 'Canceladas', data: getReservationsByStatus(['Cancelada']) },
+    ];
+
+    return (
+        <Tabs defaultValue="all">
+            <TabsList>
+                {tabs.map(tab => (
+                    <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                ))}
+            </TabsList>
+
+            {tabs.map(tab => (
+                <TabsContent key={tab.value} value={tab.value}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{tab.label}</CardTitle>
+                            <CardDescription>Uma lista de todas as reservas {tab.label.toLowerCase()}.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Recurso</TableHead>
+                                        <TableHead>Usuário</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="hidden md:table-cell">Início</TableHead>
+                                        <TableHead className="hidden md:table-cell">Fim</TableHead>
+                                        <TableHead><span className="sr-only">Ações</span></TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {tab.data.length > 0 ? (
+                                        tab.data.map((res) => {
+                                            const canModify = isAdmin || currentUserId === res.userId;
+                                            return (
+                                                <TableRow key={res.id}>
+                                                    <TableCell className="font-medium">{res.resourceName}</TableCell>
+                                                    <TableCell>{res.userName}</TableCell>
+                                                    <TableCell><Badge variant={statusVariant(res.status)}>{res.status}</Badge></TableCell>
+                                                    <TableCell className="hidden md:table-cell">{res.startTime.toLocaleString()}</TableCell>
+                                                    <TableCell className="hidden md:table-cell">{res.endTime.toLocaleString()}</TableCell>
+                                                    <TableCell>
+                                                        <AlertDialog>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                        <span className="sr-only">Abrir menu</span>
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end">
+                                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                                     <DropdownMenuItem asChild>
+                                                                        <Link href={`/dashboard/reservations/edit/${res.id}`}>Editar</Link>
+                                                                    </DropdownMenuItem>
+                                                                    {res.status !== 'Cancelada' && (
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <DropdownMenuItem disabled={!canModify}>Cancelar</DropdownMenuItem>
+                                                                        </AlertDialogTrigger>
+                                                                    )}
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta ação não pode ser desfeita. Isso cancelará permanentemente a reserva.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Voltar</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleCancelReservation(res.id)}>Confirmar</AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="text-center">Nenhuma reserva encontrada.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                        <CardFooter>
+                            <div className="text-xs text-muted-foreground">
+                                Mostrando <strong>{tab.data.length}</strong> de <strong>{reservations.length}</strong> reservas filtradas.
+                            </div>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
+            ))}
+        </Tabs>
+    );
+}

@@ -1,20 +1,18 @@
 
-'use client'
+'use server';
 
 import { z } from "zod"
-import { ref, set, get, push, remove, update } from "firebase/database";
-import { database } from "@/firebase";
-import { getUserById } from "./data";
-import type { Resource } from "@/lib/data";
-
+import { db } from '@vercel/postgres';
+import { revalidatePath } from 'next/cache';
+import { fetchUserById } from "@/lib/data";
 
 const resourceSchema = z.object({
-  name: z.string().min(3),
-  type: z.string().min(3),
-  location: z.string().min(3),
-  capacity: z.coerce.number().min(1),
+  name: z.string().min(3, "O nome deve ter pelo menos 3 caracteres."),
+  type: z.string().min(3, "O tipo deve ter pelo menos 3 caracteres."),
+  location: z.string().min(3, "A localização deve ter pelo menos 3 caracteres."),
+  capacity: z.coerce.number().min(1, "A capacidade/quantidade deve ser de pelo menos 1."),
   equipment: z.string().optional(),
-  imageUrl: z.string().url(),
+  imageUrl: z.string().url("Por favor, insira uma URL válida."),
   tags: z.array(z.string()).default([]),
 });
 
@@ -26,30 +24,35 @@ export async function createResourceAction(
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const user = await getUserById(currentUserId);
+  const user = await fetchUserById(currentUserId);
   if (!user || user.role !== 'Admin') {
       return { success: false, message: "Permissão negada. Apenas administradores podem criar recursos." };
   }
 
   const validatedFields = resourceSchema.safeParse(values);
   if (!validatedFields.success) {
-    return { success: false, message: 'Dados inválidos.' };
+    // A função flatten refina a apresentação dos erros.
+    const errorMessages = validatedFields.error.flatten().fieldErrors;
+    return { 
+        success: false, 
+        message: 'Dados inválidos. Por favor, verifique os campos.', 
+        errors: errorMessages
+    };
   }
 
-  const { equipment, ...rest } = validatedFields.data;
-  
-  const newResource: Omit<Resource, 'id'> = {
-    ...rest,
-    equipment: equipment ? equipment.split(',').map(e => e.trim()) : [],
-    availability: "Disponível", // Default value
-  };
+  const { name, type, location, capacity, equipment, imageUrl, tags } = validatedFields.data;
+  const equipmentArray = equipment ? equipment.split(',').map(e => e.trim()) : [];
 
   try {
-    const newResourceRef = push(ref(database, 'resources'));
-    await set(newResourceRef, newResource);
+    await db.sql`
+      INSERT INTO resources (name, type, location, capacity, equipment, imageUrl, tags, availability)
+      VALUES (${name}, ${type}, ${location}, ${capacity}, ${equipmentArray}, ${imageUrl}, ${tags}, 'Disponível')
+    `;
+    revalidatePath('/dashboard/resources');
     return { success: true, message: "Recurso criado com sucesso!" };
   } catch (error) {
-    return { success: false, message: "Falha ao criar o recurso." };
+    console.error("Database Error:", error);
+    return { success: false, message: "Falha ao criar o recurso no banco de dados." };
   }
 }
 
@@ -65,29 +68,42 @@ export async function updateResourceAction(
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const user = await getUserById(currentUserId);
+  const user = await fetchUserById(currentUserId);
   if (!user || user.role !== 'Admin') {
       return { success: false, message: "Permissão negada." };
   }
 
   const validatedFields = updateResourceSchema.safeParse(values);
   if (!validatedFields.success) {
-    return { success: false, message: 'Dados inválidos.' };
+    const errorMessages = validatedFields.error.flatten().fieldErrors;
+    return { 
+        success: false, 
+        message: 'Dados inválidos. Por favor, verifique os campos.', 
+        errors: errorMessages
+    };
   }
   
-  const { id, equipment, ...rest } = validatedFields.data;
-  
-  const updatedData = {
-    ...rest,
-    equipment: equipment ? equipment.split(',').map(e => e.trim()) : [],
-  };
+  const { id, name, type, location, capacity, equipment, imageUrl, tags } = validatedFields.data;
+  const equipmentArray = equipment ? equipment.split(',').map(e => e.trim()) : [];
 
   try {
-    const resourceRef = ref(database, `resources/${id}`);
-    await set(resourceRef, updatedData); // `set` overwrites, which is fine here since we have all fields
+    await db.sql`
+        UPDATE resources
+        SET name = ${name}, 
+            type = ${type}, 
+            location = ${location}, 
+            capacity = ${capacity}, 
+            equipment = ${equipmentArray}, 
+            imageUrl = ${imageUrl}, 
+            tags = ${tags}
+        WHERE id = ${id}
+    `;
+    revalidatePath('/dashboard/resources');
+    revalidatePath(`/dashboard/resources/edit/${id}`); // Revalida a página de edição também
     return { success: true, message: "Recurso atualizado com sucesso!" };
   } catch (error) {
-    return { success: false, message: "Falha ao atualizar o recurso." };
+    console.error("Database Error:", error);
+    return { success: false, message: "Falha ao atualizar o recurso no banco de dados." };
   }
 }
 
@@ -97,32 +113,24 @@ export async function deleteResourceAction(resourceId: string, currentUserId: st
     return { success: false, message: "Usuário não autenticado." };
   }
   
-  const user = await getUserById(currentUserId);
+  const user = await fetchUserById(currentUserId);
   if (!user || user.role !== 'Admin') {
       return { success: false, message: "Permissão negada." };
   }
 
   try {
-    const resourceRef = ref(database, `resources/${resourceId}`);
-    await remove(resourceRef);
+    // Primeiro, exclui as reservas associadas ao recurso
+    await db.sql`DELETE FROM reservations WHERE resource_id = ${resourceId}`;
 
-    // Also delete associated reservations (optional but good practice)
-    const reservationsSnapshot = await get(ref(database, 'reservations'));
-    if (reservationsSnapshot.exists()) {
-        const updates: { [key: string]: null } = {};
-        const allReservations = reservationsSnapshot.val();
-        for (const resId in allReservations) {
-            if (allReservations[resId].resourceId === resourceId) {
-                updates[`/reservations/${resId}`] = null;
-            }
-        }
-        if(Object.keys(updates).length > 0) {
-            await update(ref(database), updates);
-        }
-    }
+    // Depois, exclui o recurso
+    await db.sql`DELETE FROM resources WHERE id = ${resourceId}`;
     
+    revalidatePath('/dashboard/resources');
+    revalidatePath('/dashboard/reservations'); // Revalida a página de reservas também
+
     return { success: true, message: "Recurso e suas reservas associadas foram excluídos." };
   } catch (error) {
+    console.error("Database Error:", error);
     return { success: false, message: "Falha ao excluir o recurso." };
   }
 }
