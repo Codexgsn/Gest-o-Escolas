@@ -16,11 +16,15 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
-// Import the necessary Firebase auth functions and instance
-import { auth } from "@/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+// Importações do Firebase, da autenticação e do novo guarda
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { firebaseApp } from "@/firebase"; 
+import RedirectIfAuthenticated from '@/components/redirect-if-authenticated';
 
-export default function LoginPage() {
+const auth = getAuth(firebaseApp);
+
+// O conteúdo da página de login foi movido para este componente
+function LoginPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -28,24 +32,17 @@ export default function LoginPage() {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-
     try {
-      // Use Firebase Authentication to sign in
       await signInWithEmailAndPassword(auth, email, password);
-
       toast({
         title: "Login bem-sucedido!",
         description: `Redirecionando para o painel...`,
       });
       router.push('/dashboard');
-
     } catch (error: any) {
       console.error("Login Error:", error.code, error.message);
-      
       let title = "Falha no Login";
       let description = "Ocorreu um erro inesperado. Tente novamente.";
-
-      // Provide user-friendly error messages based on the error code
       switch (error.code) {
         case 'auth/user-not-found':
         case 'auth/wrong-password':
@@ -59,10 +56,7 @@ export default function LoginPage() {
         case 'auth/too-many-requests':
           description = "Acesso temporariamente bloqueado devido a muitas tentativas. Tente novamente mais tarde.";
           break;
-        default:
-          break;
       }
-
       toast({
         variant: "destructive",
         title: title,
@@ -128,5 +122,14 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// O componente principal agora aplica o guarda de autenticação
+export default function LoginPage() {
+  return (
+    <RedirectIfAuthenticated>
+      <LoginPageContent />
+    </RedirectIfAuthenticated>
   );
 }

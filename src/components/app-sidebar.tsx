@@ -6,7 +6,6 @@ import {
     Building,
     CalendarDays,
     LayoutDashboard,
-    Search,
     Settings,
     Users,
 } from "lucide-react";
@@ -24,7 +23,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
+import { useAppUser } from "@/hooks/use-app-user";
 
 const allMenuItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Painel", adminOnly: false },
@@ -37,7 +36,7 @@ const allMenuItems = [
 export default function AppSidebar() {
   const pathname = usePathname();
   const { state } = useSidebar();
-  const { currentUser, isLoaded } = useAuth();
+  const { currentUser, isLoaded } = useAppUser();
 
   // Filter menu items based on user role
   const menuItems = allMenuItems.filter(item => {

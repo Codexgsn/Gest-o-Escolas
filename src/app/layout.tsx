@@ -1,9 +1,12 @@
-import type {Metadata} from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from '@/hooks/use-auth';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+
+// Importações do Firebase
+import { FirebaseProvider } from '@/firebase/provider';
+import { firebaseApp, firestore, auth } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'Gestão Escolar',
@@ -23,9 +26,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="antialiased">
-        <AuthProvider>
-            {children}
-        </AuthProvider>
+        <FirebaseProvider firebaseApp={firebaseApp} firestore={firestore} auth={auth}>
+          {children}
+        </FirebaseProvider>
         <Toaster />
         <Analytics />
         <SpeedInsights />

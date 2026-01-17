@@ -1,9 +1,8 @@
-
 'use client';
 
 import { BookOpenCheck, LayoutDashboard, CalendarDays, Building, Users, Settings, Menu, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   Sheet,
@@ -23,10 +22,10 @@ import { Input } from '@/components/ui/input';
 import { ThemeToggle } from './theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { SidebarTrigger } from './ui/sidebar';
-import { useAuth } from '@/hooks/use-auth';
+import { useAppUser } from '@/hooks/use-app-user'; // Correct hook for app user data
+import { useAuth as useFirebaseAuth } from '@/firebase/provider'; // Correct hook for auth instance
+import { signOut } from 'firebase/auth'; // Firebase signout function
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import AppSidebar from './app-sidebar';
 
 const allMenuItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Painel", adminOnly: false },
@@ -38,7 +37,7 @@ const allMenuItems = [
 
 function MobileNav() {
     const pathname = usePathname();
-    const { currentUser, isLoaded } = useAuth();
+    const { currentUser, isLoaded } = useAppUser(); // Use the new hook
     const [open, setOpen] = useState(false);
 
     const menuItems = allMenuItems.filter(item => {
@@ -86,10 +85,11 @@ function MobileNav() {
 export default function Header() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const { currentUser, isLoaded, logout } = useAuth();
-  
-  const handleLogout = () => {
-    logout();
+  const { currentUser, isLoaded } = useAppUser(); // Use new hook for user data
+  const auth = useFirebaseAuth(); // Use hook from provider to get auth instance
+
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/');
   };
 
@@ -106,7 +106,7 @@ export default function Header() {
         className='sticky top-4 z-10 w-[95%] rounded-lg border bg-card/95 backdrop-blur-sm shadow-lg mb-4'
       >
           <div className="flex items-center gap-4 p-4 sm:px-6">
-            
+
             <MobileNav />
 
             <SidebarTrigger className="hidden md:flex flex-shrink-0" />
