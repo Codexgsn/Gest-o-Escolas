@@ -73,23 +73,29 @@ export function useSidebar() {
 export const SidebarProvider: React.FC<React.PropsWithChildren<{}>> = ({ children }) => {
   const store = useSidebarStore();
   const isMobile = useIsMobile();
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
-    // THIS IS THE FIX: Only update the state if it has actually changed.
-    if (isMobile !== useSidebarStore.getState().isMobile) {
-        store.setIsMobile(isMobile);
-    }
-  }, [isMobile, store]);
+    setIsMounted(true);
+  }, []);
 
   React.useEffect(() => {
-    const cookieValue = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
-      ?.split('=')[1];
-    if (cookieValue) {
-      store.setOpen(cookieValue === 'true');
+    if (isMounted) {
+      store.setIsMobile(isMobile);
     }
-  }, [store]);
+  }, [isMobile, store, isMounted]);
+
+  React.useEffect(() => {
+    if (isMounted) {
+      const cookieValue = document.cookie
+        .split('; ')
+        .find((row) => row.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+        ?.split('=')[1];
+      if (cookieValue) {
+        store.setOpen(cookieValue === 'true');
+      }
+    }
+  }, [store, isMounted]);
 
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -111,7 +117,6 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
                 '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
             } as React.CSSProperties}
             className="group/sidebar-wrapper"
-            data-sidebar-state={store.getState()}
           >
             {children}
           </div>
@@ -122,8 +127,21 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
 
 const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
   ({ className, children, ...props }, ref) => {
-    const { getState, isMobile } = useSidebarStore();
+    const { isMobile, getState } = useSidebarStore();
     const state = getState();
+    const [isMounted, setIsMounted] = React.useState(false);
+    React.useEffect(() => setIsMounted(true), []);
+
+    if (!isMounted) {
+      // Render a static placeholder on the server and initial client render
+      return (
+          <div 
+            ref={ref} 
+            className={cn('hidden h-full text-sidebar-foreground z-40 md:flex md:flex-col w-[--sidebar-width]', className)} 
+            {...props}
+          />
+      );
+    }
 
     if (isMobile) return null;
 
@@ -139,9 +157,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>(
         data-state={state}
         {...props}
       >
-        <div data-sidebar="sidebar" className="flex h-full w-full flex-col">
-          {children}
-        </div>
+        {children}
       </div>
     );
   }
