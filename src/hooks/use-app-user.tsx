@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/firebase/provider';
 import { getUserById as getUserByIdAction } from '@/app/actions/data';
 import type { User as AppUser } from '@/lib/data';
@@ -40,7 +40,6 @@ export const useAppUser = (): AppUserHookResult => {
     let isCancelled = false;
     const fetchAppUser = async () => {
       try {
-        // Use a stable value (UID) for fetching
         const appUser = await getUserByIdAction(firebaseUser.uid);
         if (!isCancelled) {
           if (appUser) {
@@ -69,9 +68,14 @@ export const useAppUser = (): AppUserHookResult => {
     return () => {
       isCancelled = true;
     };
-  // Depend on the user's UID, which is stable, instead of the user object itself.
-  // This prevents the infinite loop.
   }, [firebaseUser?.uid, isFirebaseUserLoading, userError]);
 
-  return { currentUser, isLoaded, error };
+  // This is the critical fix. The returned object is memoized to ensure referential stability.
+  // Components consuming this hook will only re-render if the actual values of
+  // currentUser, isLoaded, or error change.
+  return useMemo(() => ({
+    currentUser,
+    isLoaded,
+    error,
+  }), [currentUser, isLoaded, error]);
 };
