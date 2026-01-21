@@ -17,8 +17,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // O suppressHydrationWarning é removido, pois a causa do erro será resolvida.
-    <html lang="pt-BR">
+    // suppressHydrationWarning é usado para evitar erros de hidratação do lado do cliente.
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
