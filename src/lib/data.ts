@@ -131,7 +131,18 @@ export async function fetchReservations(filters: {
   noStore();
   try {
     const reservationsRef = ref(database, 'reservations');
-    const snapshot = await get(reservationsRef);
+    let dataQuery;
+
+    // If a userId is provided, create a query to filter by it.
+    // This is much more efficient as it filters data at the database level.
+    if (filters.userId) {
+      dataQuery = query(reservationsRef, orderByChild('userId'), equalTo(filters.userId));
+    } else {
+      // If no userId, fetch all reservations. This should typically be for admins.
+      dataQuery = reservationsRef;
+    }
+    
+    const snapshot = await get(dataQuery);
 
     if (!snapshot.exists()) {
       return [];
@@ -143,10 +154,7 @@ export async function fetchReservations(filters: {
       ...reservationsData[key],
     }));
 
-    // Apply filters
-    if (filters.userId) {
-      reservations = reservations.filter(r => r.userId === filters.userId);
-    }
+    // Apply status filter after fetching
     if (filters.status) {
         const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
         if (statuses.length > 0) {
