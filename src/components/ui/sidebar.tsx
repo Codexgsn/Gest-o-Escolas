@@ -80,10 +80,14 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
   }, []);
 
   React.useEffect(() => {
-    if (isMounted) {
-      store.setIsMobile(isMobile);
+    if (!isMounted || isMobile === null) return;
+
+    const currentIsMobile = store.getState().isMobile;
+
+    if (currentIsMobile !== isMobile) {
+        store.setIsMobile(isMobile);
     }
-  }, [isMobile, store, isMounted]);
+  }, [isMobile, isMounted, store]);
 
   React.useEffect(() => {
     if (isMounted) {
@@ -107,6 +111,8 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{}>> = ({ childre
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [store]);
+
+  if (isMobile === null) return null;
 
   return (
     <SidebarContext.Provider value={store}>
