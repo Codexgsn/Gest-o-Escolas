@@ -40,7 +40,6 @@ import {
   AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
 
-
 type ReservationStatus = Reservation['status'];
 
 const statusVariant = (status: ReservationStatus) => {
@@ -62,6 +61,16 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
     const { toast } = useToast();
     const router = useRouter();
 
+    if (!Array.isArray(reservations)) {
+        return (
+            <Card>
+                <CardContent>
+                    <div className="text-center p-4">Carregando reservas ou nenhuma reserva encontrada.</div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     const handleCancelReservation = async (reservationId: string) => {
         const result = await cancelReservationAction(reservationId, currentUserId);
 
@@ -70,7 +79,7 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
                 title: "Reserva Cancelada",
                 description: "A reserva foi cancelada com sucesso.",
             });
-            router.refresh(); // Refreshes the Server Component and fetches the new data
+            router.refresh();
         } else {
             toast({
                 title: "Erro",
@@ -127,8 +136,8 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
                                                     <TableCell className="font-medium">{res.resourceName}</TableCell>
                                                     <TableCell>{res.userName}</TableCell>
                                                     <TableCell><Badge variant={statusVariant(res.status)}>{res.status}</Badge></TableCell>
-                                                    <TableCell className="hidden md:table-cell">{res.startTime.toLocaleString()}</TableCell>
-                                                    <TableCell className="hidden md:table-cell">{res.endTime.toLocaleString()}</TableCell>
+                                                    <TableCell className="hidden md:table-cell">{new Date(res.startTime).toLocaleString()}</TableCell>
+                                                    <TableCell className="hidden md:table-cell">{new Date(res.endTime).toLocaleString()}</TableCell>
                                                     <TableCell>
                                                         <AlertDialog>
                                                             <DropdownMenu>

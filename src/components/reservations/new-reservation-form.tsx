@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/hooks/useAuth"; // Import the new hook
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { ptBR } from 'date-fns/locale';
@@ -77,21 +77,22 @@ interface NewReservationFormProps {
 export function NewReservationForm({ resources, settings, initialResourceId }: NewReservationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { user: authUser, loading: authLoading } = useAuth(); // Use the auth hook
+  const { user: authUser, loading: authLoading } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      resourceId: initialResourceId || "",
+      resourceId: "",
       description: "",
     },
   });
 
+  const { setValue } = form;
   useEffect(() => {
      if (initialResourceId) {
-      form.setValue("resourceId", initialResourceId);
+      setValue("resourceId", initialResourceId);
     }
-  }, [initialResourceId, form]);
+  }, [initialResourceId, setValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!authUser) {
@@ -124,7 +125,7 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
   };
   
   if (authLoading) {
-      return <p>Carregando...</p>; // Show a loading state while checking auth
+      return <p>Carregando...</p>;
   }
   
   if (!authUser) {
@@ -141,7 +142,7 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Recurso</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um recurso para reservar" />
