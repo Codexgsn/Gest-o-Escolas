@@ -2,12 +2,12 @@
 "use client";
 
 import {
-    BookOpenCheck,
-    Building,
-    CalendarDays,
-    LayoutDashboard,
-    Settings,
-    Users,
+  BookOpenCheck,
+  Building,
+  CalendarDays,
+  LayoutDashboard,
+  Settings,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,8 +20,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarFooter,
-} from "@/components/ui/sidebar"; 
-import { useLayoutStore } from "@/lib/store"; 
+} from "@/components/ui/sidebar";
+import { useLayoutStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const allMenuItems = [
@@ -32,34 +32,35 @@ const allMenuItems = [
   { href: "/dashboard/settings", icon: Settings, label: "Configurações", adminOnly: true },
 ];
 
-export default function AppSidebar() {
+export default function AppSidebar({ userRole }: { userRole?: string }) {
   const pathname = usePathname();
   const state = useLayoutStore((s) => s.getState());
 
-  // TODO: Re-implement role-based menu filtering with the new auth system
-  const menuItems = allMenuItems;
+  const menuItems = allMenuItems.filter(item => !item.adminOnly || userRole === 'Admin');
 
   return (
     <Sidebar className="border-r">
-       <SidebarHeader>
+      <SidebarHeader>
         <div className="flex items-center gap-2">
-            <BookOpenCheck className="w-8 h-8 text-primary" />
-            <span className={cn("text-lg font-semibold", { 'sr-only': state === 'collapsed' })}>Gestão Escolar</span>
+          <BookOpenCheck className="w-8 h-8 text-primary" />
+          <span className={cn("text-lg font-semibold", { 'sr-only': state === 'collapsed' })}>Gestão Escolar</span>
         </div>
       </SidebarHeader>
       <SidebarMenu className="flex-1">
         {menuItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
-              as={Link}
-              href={item.href}
-              title={item.label}
+              asChild
+              tooltip={item.label}
               className={cn("w-full", {
                 "bg-sidebar-accent text-sidebar-accent-foreground": pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard'),
               })}
-              tooltip={item.label}
+              isActive={pathname === item.href}
             >
-              <item.icon className="h-5 w-5" />
+              <Link href={item.href}>
+                <item.icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         ))}

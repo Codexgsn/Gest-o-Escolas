@@ -45,7 +45,7 @@ const formSchema = z.object({
 export function EditUserForm({ user }: { user: User }) {
   const router = useRouter();
   const { toast } = useToast();
-  
+
   const currentUserId = '00000000-0000-0000-0000-000000000000'; // Placeholder UUID
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -53,7 +53,7 @@ export function EditUserForm({ user }: { user: User }) {
     defaultValues: {
       name: user.name || "",
       email: user.email || "",
-      role: user.role || "Usuário",
+      role: (user.role as "Admin" | "Usuário") || "Usuário",
       avatar: user.avatar || "",
     },
   });
@@ -110,14 +110,14 @@ export function EditUserForm({ user }: { user: User }) {
                   <FormControl>
                     <Input type="email" placeholder="Ex: joao.silva@example.com" {...field} />
                   </FormControl>
-                   <FormDescription>
+                  <FormDescription>
                     O usuário usará este email para fazer login.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-             <FormField
+            <FormField
               control={form.control}
               name="role"
               render={({ field }) => (

@@ -50,29 +50,29 @@ const formSchema = z.object({
   endTime: z.string({ required_error: "Por favor, selecione uma hora de fim." }),
   description: z.string().optional(),
 }).refine(data => data.endTime > data.startTime, {
-    message: "A hora de fim deve ser posterior à hora de início.",
-    path: ["endTime"],
+  message: "A hora de fim deve ser posterior à hora de início.",
+  path: ["endTime"],
 });
 
 function generateTimeSlots(settings: SchoolSettings | null): { startSlots: string[], endSlots: string[] } {
-    if (!settings) return { startSlots: [], endSlots: [] };
-    const allTimes = new Set<string>();
-    settings.classBlocks.forEach(block => {
-        allTimes.add(block.startTime);
-        allTimes.add(block.endTime);
-    });
-    settings.breaks.forEach(breakItem => {
-        allTimes.add(breakItem.startTime);
-        allTimes.add(breakItem.endTime);
-    });
-    const sortedTimes = Array.from(allTimes).sort();
-    return { startSlots: sortedTimes.slice(0, -1), endSlots: sortedTimes.slice(1) };
+  if (!settings) return { startSlots: [], endSlots: [] };
+  const allTimes = new Set<string>();
+  settings.classBlocks.forEach(block => {
+    allTimes.add(block.startTime);
+    allTimes.add(block.endTime);
+  });
+  settings.breaks.forEach(breakItem => {
+    allTimes.add(breakItem.startTime);
+    allTimes.add(breakItem.endTime);
+  });
+  const sortedTimes = Array.from(allTimes).sort();
+  return { startSlots: sortedTimes.slice(0, -1), endSlots: sortedTimes.slice(1) };
 }
 
 interface EditReservationFormProps {
-    reservation: Reservation;
-    resources: Resource[];
-    settings: SchoolSettings | null;
+  reservation: Reservation;
+  resources: Resource[];
+  settings: SchoolSettings | null;
 }
 
 export function EditReservationForm({ reservation, resources, settings }: EditReservationFormProps) {
@@ -86,14 +86,14 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
       date: new Date(reservation.startTime),
       startTime: format(new Date(reservation.startTime), 'HH:mm'),
       endTime: format(new Date(reservation.endTime), 'HH:mm'),
-      description: reservation.purpose || "",
+      description: "", // Removed purpose as it's not in the DB schema anymore
     },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     const submissionData = {
-        ...values,
-        id: reservation.id, // Include the reservation ID for the update action
+      ...values,
+      id: reservation.id, // Include the reservation ID for the update action
     };
 
     const result = await updateReservationAction(submissionData, DUMMY_USER_ID);
@@ -127,29 +127,29 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
-            control={form.control}
-            name="resourceId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recurso</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um recurso para reservar" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {resources.map((resource) => (
-                      <SelectItem key={resource.id} value={resource.id}>
-                        {resource.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          control={form.control}
+          name="resourceId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Recurso</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um recurso para reservar" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {resources.map((resource) => (
+                    <SelectItem key={resource.id} value={resource.id}>
+                      {resource.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -179,34 +179,34 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Hora de Início</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o início" /></SelectTrigger></FormControl>
-                    <SelectContent>{startSlots.map((time) => <SelectItem key={`start-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Hora de Fim</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o fim" /></SelectTrigger></FormControl>
-                    <SelectContent>{endSlots.filter(time => !startTimeValue || time > startTimeValue).map((time) => <SelectItem key={`end-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+          <FormField
+            control={form.control}
+            name="startTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hora de Início</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o início" /></SelectTrigger></FormControl>
+                  <SelectContent>{startSlots.map((time) => <SelectItem key={`start-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hora de Fim</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o fim" /></SelectTrigger></FormControl>
+                  <SelectContent>{endSlots.filter(time => !startTimeValue || time > startTimeValue).map((time) => <SelectItem key={`end-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <FormField

@@ -8,7 +8,7 @@ import { sql } from '@vercel/postgres';
 // --- Resources ---
 export async function getResources(): Promise<Resource[]> {
     try {
-        const result = await sql<Resource[]>`SELECT * FROM resources`;
+        const result = await sql<Resource>`SELECT * FROM resources`;
         return result.rows;
     } catch (error) {
         console.error('Error fetching resources:', error);
@@ -18,7 +18,7 @@ export async function getResources(): Promise<Resource[]> {
 
 export async function getResourceById(id: string): Promise<Resource | undefined> {
     try {
-        const result = await sql<Resource[]>`SELECT * FROM resources WHERE id = ${id}`;
+        const result = await sql<Resource>`SELECT * FROM resources WHERE id = ${id}`;
         return result.rows[0];
     } catch (error) {
         console.error(`Error fetching resource with id: ${id}`, error);
@@ -30,7 +30,7 @@ export async function getResourceById(id: string): Promise<Resource | undefined>
 // --- Users ---
 export async function getUsers(): Promise<User[]> {
     try {
-        const result = await sql<User[]>`SELECT * FROM users`;
+        const result = await sql<User>`SELECT * FROM users`;
         return result.rows;
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -40,7 +40,7 @@ export async function getUsers(): Promise<User[]> {
 
 export async function getUserById(id: string): Promise<User | undefined> {
     try {
-        const result = await sql<User[]>`SELECT * FROM users WHERE id = ${id}`;
+        const result = await sql<User>`SELECT * FROM users WHERE id = ${id}`;
         return result.rows[0];
     } catch (error) {
         console.error(`Error fetching user with id: ${id}`, error);
@@ -52,7 +52,7 @@ export async function getUserById(id: string): Promise<User | undefined> {
 // --- Reservations ---
 export async function getReservations(): Promise<Reservation[]> {
     try {
-        const result = await sql<Reservation[]>`SELECT * FROM reservations`;
+        const result = await sql<Reservation>`SELECT * FROM reservations`;
         return result.rows;
     } catch (error) {
         console.error('Error fetching reservations:', error);

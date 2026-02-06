@@ -6,6 +6,31 @@ import { db } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { fetchUserById } from "@/lib/data";
 
+export async function getReservations() {
+    try {
+        const { rows } = await db.sql`
+            SELECT 
+                r.id, 
+                r."resourceId", 
+                r."userId", 
+                r."startTime", 
+                r."endTime", 
+                r.status, 
+                r."createdAt",
+                res.name as "resourceName",
+                u.name as "userName"
+            FROM reservations r
+            JOIN resources res ON r."resourceId" = res.id
+            JOIN users u ON r."userId" = u.id
+            ORDER BY r."startTime" DESC
+        `;
+        return rows as any as import("@/lib/definitions").Reservation[];
+    } catch (error) {
+        console.error('Failed to fetch reservations:', error);
+        throw new Error('Failed to fetch reservations');
+    }
+}
+
 // Helper function to check for overlapping reservations using SQL
 async function hasConflict(resourceId: string, startTime: Date, endTime: Date, reservationId: string | null = null): Promise<boolean> {
     let query = `
@@ -29,58 +54,60 @@ async function hasConflict(resourceId: string, startTime: Date, endTime: Date, r
     } catch (error) {
         console.error("SQL Error in hasConflict:", error);
         // To be safe, prevent reservation if the check fails
-        return true; 
+        return true;
     }
 }
 
-const reservationSchema = z.object({
-  resourceId: z.string({ required_error: "Por favor, selecione um recurso." }),
-  date: z.coerce.date({ required_error: "Por favor, selecione uma data." }),
-  startTime: z.string({ required_error: "Por favor, selecione um horário de início." }),
-  endTime: z.string({ required_error: "Por favor, selecione um horário de término." }),
-}).refine(data => data.endTime > data.startTime, {
+const baseReservationSchema = z.object({
+    resourceId: z.string({ required_error: "Por favor, selecione um recurso." }),
+    date: z.coerce.date({ required_error: "Por favor, selecione uma data." }),
+    startTime: z.string({ required_error: "Por favor, selecione um horário de início." }),
+    endTime: z.string({ required_error: "Por favor, selecione um horário de término." }),
+});
+
+const reservationSchema = baseReservationSchema.refine(data => data.endTime > data.startTime, {
     message: "O horário de término deve ser posterior ao horário de início.",
     path: ["endTime"], // Path to the field that gets the error
 });
 
 export async function createReservationAction(values: unknown, currentUserId: string | null) {
-  if (!currentUserId) {
-    return { success: false, message: "Usuário não autenticado." };
-  }
+    if (!currentUserId) {
+        return { success: false, message: "Usuário não autenticado." };
+    }
 
-  const validatedFields = reservationSchema.safeParse(values);
-  if (!validatedFields.success) {
-    return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
-  }
+    const validatedFields = reservationSchema.safeParse(values);
+    if (!validatedFields.success) {
+        return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
+    }
 
-  const { resourceId, date, startTime, endTime } = validatedFields.data;
+    const { resourceId, date, startTime, endTime } = validatedFields.data;
 
-  const startDateTime = new Date(date);
-  const [startHours, startMinutes] = startTime.split(':').map(Number);
-  startDateTime.setHours(startHours, startMinutes, 0, 0);
+    const startDateTime = new Date(date);
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    startDateTime.setHours(startHours, startMinutes, 0, 0);
 
-  const endDateTime = new Date(date);
-  const [endHours, endMinutes] = endTime.split(':').map(Number);
-  endDateTime.setHours(endHours, endMinutes, 0, 0);
+    const endDateTime = new Date(date);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+    endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-  if (await hasConflict(resourceId, startDateTime, endDateTime)) {
-    return { success: false, message: "Conflito de agendamento. Este horário já está reservado para o recurso selecionado." };
-  }
+    if (await hasConflict(resourceId, startDateTime, endDateTime)) {
+        return { success: false, message: "Conflito de agendamento. Este horário já está reservado para o recurso selecionado." };
+    }
 
-  try {
-    await db.sql`
+    try {
+        await db.sql`
       INSERT INTO reservations (user_id, resource_id, start_time, end_time, status)
       VALUES (${currentUserId}, ${resourceId}, ${startDateTime.toISOString()}, ${endDateTime.toISOString()}, 'Confirmada')
     `;
-    revalidatePath('/dashboard/reservations');
-    return { success: true, message: "Reserva criada com sucesso!" };
-  } catch (error) {
-    console.error("Database Error:", error);
-    return { success: false, message: "Falha ao criar a reserva no banco de dados." };
-  }
+        revalidatePath('/dashboard/reservations');
+        return { success: true, message: "Reserva criada com sucesso!" };
+    } catch (error) {
+        console.error("Database Error:", error);
+        return { success: false, message: "Falha ao criar a reserva no banco de dados." };
+    }
 }
 
-const updateReservationSchema = reservationSchema.extend({
+const updateReservationSchema = baseReservationSchema.extend({
     id: z.string(),
 });
 
@@ -93,12 +120,12 @@ export async function updateReservationAction(values: unknown, currentUserId: st
     if (!validatedFields.success) {
         return { success: false, message: 'Dados inválidos.', errors: validatedFields.error.flatten().fieldErrors };
     }
-    
+
     const { id, resourceId, date, startTime, endTime } = validatedFields.data;
 
     const user = await fetchUserById(currentUserId);
     const reservationResult = await db.sql`SELECT user_id FROM reservations WHERE id = ${id}`;
-    if(reservationResult.rows.length === 0) {
+    if (reservationResult.rows.length === 0) {
         return { success: false, message: "Reserva não encontrada." };
     }
     const reservationOwnerId = reservationResult.rows[0].user_id;
@@ -114,7 +141,7 @@ export async function updateReservationAction(values: unknown, currentUserId: st
     const endDateTime = new Date(date);
     const [endHours, endMinutes] = endTime.split(':').map(Number);
     endDateTime.setHours(endHours, endMinutes, 0, 0);
-    
+
     if (await hasConflict(resourceId, startDateTime, endDateTime, id)) {
         return { success: false, message: "Conflito de agendamento. O horário selecionado não está disponível." };
     }
@@ -143,8 +170,8 @@ export async function cancelReservationAction(reservationId: string, currentUser
 
     const user = await fetchUserById(currentUserId);
     const reservationResult = await db.sql`SELECT user_id FROM reservations WHERE id = ${reservationId}`;
-    if(reservationResult.rows.length === 0) {
-       return { success: false, message: "Reserva não encontrada." };
+    if (reservationResult.rows.length === 0) {
+        return { success: false, message: "Reserva não encontrada." };
     }
     const reservation = reservationResult.rows[0];
 

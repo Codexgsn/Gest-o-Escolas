@@ -9,8 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function () { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function () { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -38,13 +38,30 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var serverless_1 = require("@neondatabase/serverless");
 var schema_1 = require("../lib/schema");
+const dotenv = require('dotenv');
+const bcrypt = require('bcrypt');
+
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var pool, client, error_1;
+        var pool, client, error_1, hashedPassword;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    pool = new serverless_1.Pool({ connectionString: process.env.DATABASE_URL });
+                    // Load .env.local first
+                    dotenv.config({ path: '.env.local' });
+                    // Load .env as fallback
+                    dotenv.config();
+
+                    var connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+                    if (!connectionString) {
+                        throw new Error('DATABASE_URL or POSTGRES_URL is not set');
+                    }
+                    if (connectionString.includes('postgresql://user:password')) {
+                        // Fallback if DATABASE_URL is the placeholder and POSTGRES_URL was possibly missing or not loaded
+                        if (process.env.POSTGRES_URL) connectionString = process.env.POSTGRES_URL;
+                        else console.warn("Warning: Using placeholder DATABASE_URL which will likely fail.");
+                    }
+                    pool = new serverless_1.Pool({ connectionString: connectionString });
                     return [4 /*yield*/, pool.connect()];
                 case 1:
                     client = _a.sent();
@@ -63,22 +80,44 @@ function main() {
                     _a.sent();
                     console.log('Tables created successfully.');
                     console.log('Seeding users...');
-                    return [4 /*yield*/, client.query("\n      INSERT INTO users (id, name, email, role)\n      VALUES\n        ('410544b2-4001-4271-9855-fec4b6a6442a', 'Admin User', 'admin@example.com', 'Admin'),\n        ('3958dc9e-712f-4377-85e9-fec4b6a6442a', 'Regular User', 'user@example.com', 'User')\n      ON CONFLICT (email) DO NOTHING;\n    ")];
+                    // Hash password "123456"
+                    return [4 /*yield*/, bcrypt.hash('123456', 10)];
                 case 6:
-                    _a.sent();
-                    console.log('Seeding resources...');
-                    return [4 /*yield*/, client.query("\n      INSERT INTO resources (id, name, type, location, capacity, equipment, \"imageUrl\", tags)\n      VALUES\n        ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Sala de Reuni\u00E3o 1', 'Sala', 'Bloco A', 10, '{\"Projetor\", \"Quadro Branco\"}', 'https://via.placeholder.com/150', '{\"reuniao\", \"apresentacao\"}'),\n        ('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Projetor Epson', 'Equipamento', 'Sala de TI', 1, '{\"Cabo HDMI\", \"Cabo VGA\"}', 'https://via.placeholder.com/150', '{\"projetor\", \"apresentacao\"}')\n      ON CONFLICT (id) DO NOTHING;\n    ")];
+                    hashedPassword = _a.sent();
+                    return [4 /*yield*/, client.query(`
+      INSERT INTO users (id, name, email, password, role)
+      VALUES
+        ('410544b2-4001-4271-9855-fec4b6a6442a', 'Admin User', 'admin@example.com', '${hashedPassword}', 'Admin'),
+        ('3958dc9e-712f-4377-85e9-fec4b6a6442a', 'Regular User', 'user@example.com', '${hashedPassword}', 'User')
+      ON CONFLICT (email) DO NOTHING;
+    `)];
                 case 7:
-                    _a.sent();
-                    console.log('Seeding reservations...');
-                    return [4 /*yield*/, client.query("\n      INSERT INTO reservations (id, \"resourceId\", \"userId\", \"startTime\", \"endTime\")\n      VALUES\n        ('a56e1573-2169-4b69-8692-23c6d8d672a6', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '410544b2-4001-4271-9855-fec4b6a6442a', '2024-01-01T10:00:00Z', '2024-01-01T11:00:00Z')\n      ON CONFLICT (id) DO NOTHING;\n    ")];
+                    const userRes = _a.sent();
+                    console.log('Users seeded:', userRes.rowCount);
+                    console.log('Seeding resources...');
+                    return [4 /*yield*/, client.query(`
+      INSERT INTO resources (id, name, type, location, capacity, equipment, "imageUrl", tags)
+      VALUES
+        ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Sala de Reunião 1', 'Sala', 'Bloco A', 10, '{"Projetor", "Quadro Branco"}', 'https://via.placeholder.com/150', '{"reuniao", "apresentacao"}'),
+        ('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Projetor Epson', 'Equipamento', 'Sala de TI', 1, '{"Cabo HDMI", "Cabo VGA"}', 'https://via.placeholder.com/150', '{"projetor", "apresentacao"}')
+      ON CONFLICT (id) DO NOTHING;
+    `)];
                 case 8:
                     _a.sent();
-                    console.log('Database seeded successfully.');
-                    return [3 /*break*/, 12];
+                    console.log('Seeding reservations...');
+                    return [4 /*yield*/, client.query(`
+      INSERT INTO reservations (id, "resourceId", "userId", "startTime", "endTime")
+      VALUES
+        ('a56e1573-2169-4b69-8692-23c6d8d672a6', 'f47ac10b-58cc-4372-a567-0e02b2c3d479', '410544b2-4001-4271-9855-fec4b6a6442a', '2024-01-01T10:00:00Z', '2024-01-01T11:00:00Z')
+      ON CONFLICT (id) DO NOTHING;
+    `)];
                 case 9:
                     error_1 = _a.sent();
-                    console.error('Error seeding database:', error_1);
+                    console.error('Error seeding database details:');
+                    if (error_1.message) console.error('Message:', error_1.message);
+                    if (error_1.detail) console.error('Detail:', error_1.detail);
+                    console.error('Hint:', error_1.hint);
+                    console.error('Full Error:', JSON.stringify(error_1, null, 2));
                     throw error_1;
                 case 10:
                     client.release();
@@ -92,5 +131,5 @@ function main() {
     });
 }
 main().catch(function (err) {
-    console.error('An error occurred while attempting to seed the database:', err);
+    console.error('An error occurred in main:', err.message);
 });

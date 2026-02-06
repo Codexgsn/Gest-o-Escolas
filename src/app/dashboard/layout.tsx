@@ -1,20 +1,21 @@
-'use client';
-
 import AppSidebar from '@/components/app-sidebar';
 import Header from '@/components/header';
+import { getCurrentUser } from '@/lib/session';
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const user = await getCurrentUser();
+  const userRole = user?.role;
 
   return (
     <div className="flex min-h-screen w-full flex-row">
-      <AppSidebar />
+      <AppSidebar userRole={userRole} />
       <div className="flex flex-1 flex-col">
         <div className="relative flex flex-1 flex-col items-center bg-background">
-          <Header />
+          <Header userRole={userRole} />
           <main className="w-full flex-1 p-4 sm:px-6 md:gap-8">{children}</main>
         </div>
       </div>
