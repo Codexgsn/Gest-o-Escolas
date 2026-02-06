@@ -5,7 +5,7 @@ import { z } from "zod"
 import { db } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { fetchUserById } from '@/lib/data';
-import { hash } from 'bcrypt'; // We'll use bcrypt for hashing passwords
+import { hash } from 'bcryptjs'; // Using bcryptjs for serverless compatibility
 
 export async function getUsers() {
     try {

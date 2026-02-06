@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { db } from '@vercel/postgres';
-import { compare } from 'bcrypt';
+import { compare } from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 

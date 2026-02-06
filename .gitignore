@@ -15,8 +15,14 @@
 # Production build files
 /build
 
-# dotenv environment variables file
+# Environment variables - NUNCA COMMITAR!
+.env
 .env*.local
+.env.development
+.env.production
+.env.test
+*.env
+!.env.example
 
 # Debug log files
 npm-debug.log*
@@ -43,3 +49,15 @@ database.rules.json
 
 # Other
 *.pem
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+tsc_output.txt
+tsc_output_*.txt
+
+# Vercel
+.vercel
+
+# Database seeds e scripts locais (se houver dados sensíveis)
+# /src/scripts/seed-local.ts  # Descomente se necessário
