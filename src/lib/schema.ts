@@ -16,6 +16,7 @@ export async function createResourcesTable(client: Pool | PoolClient) {
       equipment TEXT[],
       "imageUrl" TEXT,
       tags TEXT[],
+      availability VARCHAR(50) DEFAULT 'Disponível',
       "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
     );
   `;

@@ -40,10 +40,10 @@ async function main() {
 
     console.log('Seeding resources...');
     const resourceRes = await client.query(`
-      INSERT INTO resources (id, name, type, location, capacity, equipment, "imageUrl", tags)
+      INSERT INTO resources (id, name, type, location, capacity, equipment, "imageUrl", tags, availability)
       VALUES
-        ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Sala de Reunião 1', 'Sala', 'Bloco A', 10, '{"Projetor", "Quadro Branco"}', 'https://via.placeholder.com/150', '{"reuniao", "apresentacao"}'),
-        ('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Projetor Epson', 'Equipamento', 'Sala de TI', 1, '{"Cabo HDMI", "Cabo VGA"}', 'https://via.placeholder.com/150', '{"projetor", "apresentacao"}')
+        ('f47ac10b-58cc-4372-a567-0e02b2c3d479', 'Sala de Reunião 1', 'Sala', 'Bloco A', 10, '{"Projetor", "Quadro Branco"}', 'https://via.placeholder.com/150', '{"reuniao", "apresentacao"}', 'Disponível'),
+        ('f47ac10b-58cc-4372-a567-0e02b2c3d480', 'Projetor Epson', 'Equipamento', 'Sala de TI', 1, '{"Cabo HDMI", "Cabo VGA"}', 'https://via.placeholder.com/150', '{"projetor", "apresentacao"}', 'Disponível')
       ON CONFLICT (id) DO NOTHING
     `);
     console.log('Resources seeded:', resourceRes.rowCount);
