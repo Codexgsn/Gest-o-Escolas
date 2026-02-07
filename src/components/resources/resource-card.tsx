@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from "react";
+
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Resource } from "@/lib/definitions";
@@ -17,6 +19,7 @@ interface ResourceCardProps {
 
 export default function ResourceCard({ resource, isAdmin = false, currentUserId }: ResourceCardProps) {
   const { toast } = useToast();
+  const [hasError, setHasError] = useState(false);
 
   const handleDelete = async () => {
     if (!confirm("Tem certeza que deseja excluir este recurso?")) return;
@@ -43,8 +46,22 @@ export default function ResourceCard({ resource, isAdmin = false, currentUserId 
   };
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="flex-grow">
+    <Card className="overflow-hidden flex flex-col h-full">
+      <div className="aspect-video w-full bg-muted flex items-center justify-center border-b overflow-hidden relative">
+        {resource.imageUrl && !hasError ? (
+          <img
+            src={resource.imageUrl}
+            alt={resource.name}
+            className="w-full h-full object-cover transition-all hover:scale-105"
+            onError={() => setHasError(true)}
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-2">
+            <span className="text-muted-foreground text-sm font-medium">Sem imagem</span>
+          </div>
+        )}
+      </div>
+      <CardHeader className="flex-none">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle>{resource.name}</CardTitle>

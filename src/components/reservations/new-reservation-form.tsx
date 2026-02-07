@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button"
 import {
@@ -47,33 +48,35 @@ const formSchema = z.object({
   endTime: z.string({ required_error: "Por favor, selecione uma hora de fim." }),
   description: z.string().optional(),
 }).refine(data => data.endTime > data.startTime, {
-    message: "A hora de fim deve ser posterior à hora de início.",
-    path: ["endTime"],
+  message: "A hora de fim deve ser posterior à hora de início.",
+  path: ["endTime"],
 });
 
 function generateTimeSlots(settings: SchoolSettings | null): { startSlots: string[], endSlots: string[] } {
-    if (!settings) return { startSlots: [], endSlots: [] };
-    const allTimes = new Set<string>();
-    settings.classBlocks.forEach(block => {
-        allTimes.add(block.startTime);
-        allTimes.add(block.endTime);
-    });
-    settings.breaks.forEach(breakItem => {
-        allTimes.add(breakItem.startTime);
-        allTimes.add(breakItem.endTime);
-    });
-    const sortedTimes = Array.from(allTimes).sort();
-    return { startSlots: sortedTimes.slice(0, -1), endSlots: sortedTimes.slice(1) };
+  if (!settings) return { startSlots: [], endSlots: [] };
+  const allTimes = new Set<string>();
+  settings.classBlocks.forEach(block => {
+    allTimes.add(block.startTime);
+    allTimes.add(block.endTime);
+  });
+  settings.breaks.forEach(breakItem => {
+    allTimes.add(breakItem.startTime);
+    allTimes.add(breakItem.endTime);
+  });
+  const sortedTimes = Array.from(allTimes).sort();
+  return { startSlots: sortedTimes.slice(0, -1), endSlots: sortedTimes.slice(1) };
 }
 
 interface NewReservationFormProps {
-    resources: Resource[];
-    settings: SchoolSettings | null;
-    initialResourceId?: string;
+  resources: Resource[];
+  settings: SchoolSettings | null;
+  initialResourceId?: string;
+  currentUserId: string;
 }
 
-export function NewReservationForm({ resources, settings, initialResourceId }: NewReservationFormProps) {
+export function NewReservationForm({ resources, settings, initialResourceId, currentUserId }: NewReservationFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -85,20 +88,27 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
 
   const { setValue } = form;
   useEffect(() => {
-     if (initialResourceId) {
+    if (initialResourceId) {
       setValue("resourceId", initialResourceId);
     }
   }, [initialResourceId, setValue]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const result = await createReservationAction(values, ""); // Placeholder for userId
+    const result = await createReservationAction(values, currentUserId);
 
     if (result.success) {
-      console.log("Sucesso", result.message);
+      toast({
+        title: "Sucesso",
+        description: result.message || "Reserva criada com sucesso!",
+      })
       router.push("/dashboard/reservations");
       router.refresh();
     } else {
-      console.error("Erro", result.message);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Criar Reserva",
+        description: result.message || "Ocorreu um erro inesperado.",
+      })
     }
   }
 
@@ -114,7 +124,7 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
     }
     return false;
   };
-  
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -173,34 +183,34 @@ export function NewReservationForm({ resources, settings, initialResourceId }: N
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Hora de Início</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o início" /></SelectTrigger></FormControl>
-                    <SelectContent>{startSlots.map((time) => <SelectItem key={`start-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Hora de Fim</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Selecione o fim" /></SelectTrigger></FormControl>
-                    <SelectContent>{endSlots.filter(time => !startTimeValue || time > startTimeValue).map((time) => <SelectItem key={`end-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+          <FormField
+            control={form.control}
+            name="startTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hora de Início</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o início" /></SelectTrigger></FormControl>
+                  <SelectContent>{startSlots.map((time) => <SelectItem key={`start-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Hora de Fim</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o fim" /></SelectTrigger></FormControl>
+                  <SelectContent>{endSlots.filter(time => !startTimeValue || time > startTimeValue).map((time) => <SelectItem key={`end-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
         <FormField

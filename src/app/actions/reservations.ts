@@ -35,10 +35,10 @@ export async function getReservations() {
 async function hasConflict(resourceId: string, startTime: Date, endTime: Date, reservationId: string | null = null): Promise<boolean> {
     let query = `
         SELECT id FROM reservations
-        WHERE resource_id = $1
+        WHERE "resourceId" = $1
           AND status = 'Confirmada'
           -- Check for overlapping time ranges
-          AND (start_time, end_time) OVERLAPS ($2, $3)
+          AND ("startTime", "endTime") OVERLAPS ($2, $3)
     `;
     const params: (string | Date)[] = [resourceId, startTime, endTime];
 
@@ -96,7 +96,7 @@ export async function createReservationAction(values: unknown, currentUserId: st
 
     try {
         await db.sql`
-      INSERT INTO reservations (user_id, resource_id, start_time, end_time, status)
+      INSERT INTO reservations ("userId", "resourceId", "startTime", "endTime", status)
       VALUES (${currentUserId}, ${resourceId}, ${startDateTime.toISOString()}, ${endDateTime.toISOString()}, 'Confirmada')
     `;
         revalidatePath('/dashboard/reservations');
@@ -124,11 +124,11 @@ export async function updateReservationAction(values: unknown, currentUserId: st
     const { id, resourceId, date, startTime, endTime } = validatedFields.data;
 
     const user = await fetchUserById(currentUserId);
-    const reservationResult = await db.sql`SELECT user_id FROM reservations WHERE id = ${id}`;
+    const reservationResult = await db.sql`SELECT "userId" FROM reservations WHERE id = ${id}`;
     if (reservationResult.rows.length === 0) {
         return { success: false, message: "Reserva não encontrada." };
     }
-    const reservationOwnerId = reservationResult.rows[0].user_id;
+    const reservationOwnerId = reservationResult.rows[0].userId;
 
     if (!user || (user.id !== reservationOwnerId && user.role !== 'Admin')) {
         return { success: false, message: "Permissão negada para editar esta reserva." };
@@ -149,9 +149,9 @@ export async function updateReservationAction(values: unknown, currentUserId: st
     try {
         await db.sql`
             UPDATE reservations
-            SET resource_id = ${resourceId}, 
-                start_time = ${startDateTime.toISOString()}, 
-                end_time = ${endDateTime.toISOString()}
+            SET "resourceId" = ${resourceId}, 
+                "startTime" = ${startDateTime.toISOString()}, 
+                "endTime" = ${endDateTime.toISOString()}
             WHERE id = ${id}
         `;
         revalidatePath('/dashboard/reservations');
@@ -169,13 +169,13 @@ export async function cancelReservationAction(reservationId: string, currentUser
     }
 
     const user = await fetchUserById(currentUserId);
-    const reservationResult = await db.sql`SELECT user_id FROM reservations WHERE id = ${reservationId}`;
+    const reservationResult = await db.sql`SELECT "userId" FROM reservations WHERE id = ${reservationId}`;
     if (reservationResult.rows.length === 0) {
         return { success: false, message: "Reserva não encontrada." };
     }
     const reservation = reservationResult.rows[0];
 
-    if (!user || (user.id !== reservation.user_id && user.role !== 'Admin')) {
+    if (!user || (user.id !== reservation.userId && user.role !== 'Admin')) {
         return { success: false, message: "Permissão negada para cancelar esta reserva." };
     }
 

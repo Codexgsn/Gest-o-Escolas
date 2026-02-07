@@ -37,7 +37,7 @@ const resourceSchema = z.object({
   location: z.string().min(3, "A localização deve ter pelo menos 3 caracteres."),
   capacity: z.coerce.number().min(1, "A capacidade/quantidade deve ser de pelo menos 1."),
   equipment: z.string().optional(),
-  imageUrl: z.string().url("Por favor, insira uma URL válida."),
+  imageUrl: z.string().min(1, "A URL ou código da imagem é obrigatório."),
   tags: z.array(z.string()).default([]),
 });
 
@@ -71,7 +71,7 @@ export async function createResourceAction(
   try {
     const id = crypto.randomUUID();
     await db.sql`
-        INSERT INTO resources (id, name, type, location, capacity, equipment, imageUrl, tags, availability)
+        INSERT INTO resources (id, name, type, location, capacity, equipment, "imageUrl", tags, availability)
         VALUES (${id}, ${name}, ${type}, ${location}, ${capacity}, ${equipmentArray as any}, ${imageUrl}, ${tags as any}, 'Disponível')
       `;
     revalidatePath('/dashboard/resources');
@@ -120,7 +120,7 @@ export async function updateResourceAction(
             location = ${location}, 
             capacity = ${capacity}, 
             equipment = ${equipmentArray as any}, 
-            imageUrl = ${imageUrl}, 
+            "imageUrl" = ${imageUrl}, 
             tags = ${tags as any}
         WHERE id = ${id}
     `;
@@ -146,7 +146,7 @@ export async function deleteResourceAction(resourceId: string, currentUserId: st
 
   try {
     // Primeiro, exclui as reservas associadas ao recurso
-    await db.sql`DELETE FROM reservations WHERE resource_id = ${resourceId}`;
+    await db.sql`DELETE FROM reservations WHERE "resourceId" = ${resourceId}`;
 
     // Depois, exclui o recurso
     await db.sql`DELETE FROM resources WHERE id = ${resourceId}`;
