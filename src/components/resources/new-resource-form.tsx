@@ -7,6 +7,8 @@ import { z } from "zod"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { createResourceAction } from "@/app/actions/resources"
+import { ImageCropper } from "./image-cropper"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -41,6 +43,8 @@ interface NewResourceFormProps {
 export function NewResourceForm({ availableTags, currentUserId }: NewResourceFormProps) {
     const router = useRouter()
     const { toast } = useToast()
+    const [croppingImage, setCroppingImage] = useState<string | null>(null)
+    const [isCropperOpen, setIsCropperOpen] = useState(false)
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -69,10 +73,17 @@ export function NewResourceForm({ availableTags, currentUserId }: NewResourceFor
 
             const reader = new FileReader();
             reader.onloadend = () => {
-                form.setValue("imageUrl", reader.result as string, { shouldValidate: true });
+                setCroppingImage(reader.result as string);
+                setIsCropperOpen(true);
             };
             reader.readAsDataURL(file);
         }
+    };
+
+    const handleCropComplete = (croppedImage: string) => {
+        form.setValue("imageUrl", croppedImage, { shouldValidate: true });
+        setIsCropperOpen(false);
+        setCroppingImage(null);
     };
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -264,6 +275,18 @@ export function NewResourceForm({ availableTags, currentUserId }: NewResourceFor
 
                 <Button type="submit">Adicionar Recurso</Button>
             </form>
+
+            {croppingImage && (
+                <ImageCropper
+                    image={croppingImage}
+                    open={isCropperOpen}
+                    onClose={() => {
+                        setIsCropperOpen(false);
+                        setCroppingImage(null);
+                    }}
+                    onCropComplete={handleCropComplete}
+                />
+            )}
         </Form>
     )
 }

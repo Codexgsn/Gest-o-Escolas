@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { updateResourceAction } from "@/app/actions/resources"
 import type { Resource } from "@/lib/definitions"
+import { ImageCropper } from "./image-cropper"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -43,6 +45,8 @@ interface EditResourceFormProps {
 export function EditResourceForm({ resource, availableTags, currentUserId }: EditResourceFormProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const [croppingImage, setCroppingImage] = useState<string | null>(null)
+  const [isCropperOpen, setIsCropperOpen] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -71,10 +75,17 @@ export function EditResourceForm({ resource, availableTags, currentUserId }: Edi
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        form.setValue("imageUrl", reader.result as string, { shouldValidate: true });
+        setCroppingImage(reader.result as string);
+        setIsCropperOpen(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCropComplete = (croppedImage: string) => {
+    form.setValue("imageUrl", croppedImage, { shouldValidate: true });
+    setIsCropperOpen(false);
+    setCroppingImage(null);
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -262,6 +273,18 @@ export function EditResourceForm({ resource, availableTags, currentUserId }: Edi
 
         <Button type="submit">Salvar Alterações</Button>
       </form>
+
+      {croppingImage && (
+        <ImageCropper
+          image={croppingImage}
+          open={isCropperOpen}
+          onClose={() => {
+            setIsCropperOpen(false);
+            setCroppingImage(null);
+          }}
+          onCropComplete={handleCropComplete}
+        />
+      )}
     </Form>
   )
 }
