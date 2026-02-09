@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useFormState, useFormStatus } from 'react-dom';
 import { useEffect } from 'react';
 import { login } from '@/app/actions/auth';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 // O conteúdo da página de login foi movido para este componente
 function LoginPageContent() {
@@ -34,7 +35,10 @@ function LoginPageContent() {
   }, [state, toast]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen items-center justify-center bg-background p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">

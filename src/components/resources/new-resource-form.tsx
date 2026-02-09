@@ -29,7 +29,7 @@ const formSchema = z.object({
     location: z.string().min(3, { message: "A localização deve ter pelo menos 3 caracteres." }),
     capacity: z.coerce.number().min(1, { message: "A capacidade deve ser de pelo menos 1." }),
     equipment: z.string().optional(),
-    imageUrl: z.string().url({ message: "Por favor, insira uma URL de imagem válida." }),
+    imageUrl: z.string().min(1, { message: "A imagem é obrigatória." }),
     tags: z.array(z.string()).default([]),
 });
 
@@ -54,6 +54,26 @@ export function NewResourceForm({ availableTags, currentUserId }: NewResourceFor
             tags: [],
         },
     })
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) { // 2MB limit
+                toast({
+                    variant: "destructive",
+                    title: "Arquivo muito grande",
+                    description: "Por favor, selecione uma imagem com menos de 2MB.",
+                });
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                form.setValue("imageUrl", reader.result as string, { shouldValidate: true });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         const result = await createResourceAction(values, currentUserId)
@@ -167,12 +187,27 @@ export function NewResourceForm({ availableTags, currentUserId }: NewResourceFor
                                 <Input placeholder="https://exemplo.com/imagem.png" {...field} />
                             </FormControl>
                             <FormDescription>
-                                Cole a URL de uma imagem da internet para representar este recurso.
+                                Cole a URL de uma imagem ou faça o upload abaixo.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
                     )}
                 />
+
+                <FormItem>
+                    <FormLabel>Ou faça upload de uma foto</FormLabel>
+                    <FormControl>
+                        <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="cursor-pointer"
+                        />
+                    </FormControl>
+                    <FormDescription>
+                        Envie uma imagem do seu dispositivo (máx. 2MB).
+                    </FormDescription>
+                </FormItem>
 
                 {availableTags.length > 0 && (
                     <FormField
