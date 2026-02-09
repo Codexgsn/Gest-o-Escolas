@@ -4,6 +4,7 @@ import { z } from "zod"
 import { db } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { fetchUserById } from "@/lib/data";
+import { cookies } from 'next/headers';
 
 export async function getResources() {
   try {
@@ -43,13 +44,15 @@ const resourceSchema = z.object({
 
 export async function createResourceAction(
   values: unknown,
-  currentUserId: string | null
+  currentUserId: string | null = null
 ) {
-  if (!currentUserId) {
+  const userId = currentUserId || cookies().get('session')?.value;
+
+  if (!userId) {
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const user = await fetchUserById(currentUserId);
+  const user = await fetchUserById(userId);
   if (!user || user.role !== 'Admin') {
     return { success: false, message: "Permissão negada. Apenas administradores podem criar recursos." };
   }
@@ -88,13 +91,15 @@ const updateResourceSchema = resourceSchema.extend({
 
 export async function updateResourceAction(
   values: unknown,
-  currentUserId: string | null
+  currentUserId: string | null = null
 ) {
-  if (!currentUserId) {
+  const userId = currentUserId || cookies().get('session')?.value;
+
+  if (!userId) {
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const user = await fetchUserById(currentUserId);
+  const user = await fetchUserById(userId);
   if (!user || user.role !== 'Admin') {
     return { success: false, message: "Permissão negada." };
   }
@@ -134,12 +139,14 @@ export async function updateResourceAction(
 }
 
 
-export async function deleteResourceAction(resourceId: string, currentUserId: string | null) {
-  if (!currentUserId) {
+export async function deleteResourceAction(resourceId: string, currentUserId: string | null = null) {
+  const userId = currentUserId || cookies().get('session')?.value;
+
+  if (!userId) {
     return { success: false, message: "Usuário não autenticado." };
   }
 
-  const user = await fetchUserById(currentUserId);
+  const user = await fetchUserById(userId);
   if (!user || user.role !== 'Admin') {
     return { success: false, message: "Permissão negada." };
   }

@@ -6,6 +6,7 @@ import { db } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { fetchUserById } from '@/lib/data';
 import { hash } from 'bcryptjs'; // Using bcryptjs for serverless compatibility
+import { cookies } from 'next/headers';
 
 export async function getUsers() {
     try {
@@ -43,8 +44,10 @@ const userUpdateSchema = z.object({
 // --- User Creation ---
 export async function createUserAction(
     values: unknown,
-    currentUserId: string | null
+    currentUserId: string | null = null
 ) {
+    const userId = currentUserId || cookies().get('session')?.value;
+
     const validatedFields = userCreationSchema.safeParse(values);
     if (!validatedFields.success) {
         return { success: false, message: "Dados de criação de usuário inválidos." };
@@ -52,8 +55,8 @@ export async function createUserAction(
 
     const { name, email, role, password, avatar } = validatedFields.data;
 
-    if (currentUserId) {
-        const currentUser = await fetchUserById(currentUserId);
+    if (userId) {
+        const currentUser = await fetchUserById(userId);
         if (!currentUser || currentUser.role !== 'Admin') {
             return { success: false, message: "Permissão negada." };
         }
@@ -86,17 +89,19 @@ export async function createUserAction(
 // --- User Update ---
 export async function updateUserAction(
     values: unknown,
-    currentUserId: string | null
+    currentUserId: string | null = null
 ) {
+    const userId = currentUserId || cookies().get('session')?.value;
+
     const validatedFields = userUpdateSchema.safeParse(values);
     if (!validatedFields.success) {
         return { success: false, message: "Dados de atualização de usuário inválidos." };
     }
 
-    if (!currentUserId) {
+    if (!userId) {
         return { success: false, message: "Usuário não autenticado." };
     }
-    const currentUser = await fetchUserById(currentUserId);
+    const currentUser = await fetchUserById(userId);
     if (!currentUser || currentUser.role !== 'Admin') {
         return { success: false, message: "Permissão negada." };
     }
@@ -120,17 +125,19 @@ export async function updateUserAction(
 }
 
 // --- User Deletion ---
-export async function deleteUserAction(userId: string, currentUserId: string | null) {
-    if (!currentUserId) {
+export async function deleteUserAction(userId: string, currentUserId: string | null = null) {
+    const sessionUserId = currentUserId || cookies().get('session')?.value;
+
+    if (!sessionUserId) {
         return { success: false, message: "Usuário não autenticado." };
     }
 
-    const currentUser = await fetchUserById(currentUserId);
+    const currentUser = await fetchUserById(sessionUserId);
     if (!currentUser || currentUser.role !== 'Admin') {
         return { success: false, message: "Permissão negada." };
     }
 
-    if (userId === currentUserId) {
+    if (userId === sessionUserId) {
         return { success: false, message: "Você não pode excluir sua própria conta." };
     }
 
@@ -143,16 +150,18 @@ export async function deleteUserAction(userId: string, currentUserId: string | n
     }
 }
 
-export async function deleteMultipleUsersAction(userIds: string[], currentUserId: string | null) {
-    if (!currentUserId) {
+export async function deleteMultipleUsersAction(userIds: string[], currentUserId: string | null = null) {
+    const sessionUserId = currentUserId || cookies().get('session')?.value;
+
+    if (!sessionUserId) {
         return { success: false, message: "Usuário não autenticado." };
     }
-    const currentUser = await fetchUserById(currentUserId);
+    const currentUser = await fetchUserById(sessionUserId);
     if (!currentUser || currentUser.role !== 'Admin') {
         return { success: false, message: "Permissão negada." };
     }
 
-    if (userIds.includes(currentUserId)) {
+    if (userIds.includes(sessionUserId)) {
         return { success: false, message: "Você não pode se excluir em uma operação em massa." };
     }
 

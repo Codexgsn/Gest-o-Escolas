@@ -37,7 +37,7 @@ export function DeleteUserButton({ userId }: { userId: string }) {
         // For now, I'll pass a dummy ID or fix the server action. 
         // Let's fix the server action to read the cookie! That makes everything cleaner.
 
-        const result = await deleteUserAction(userId, null); // passing null, action should handle it
+        const result = await deleteUserAction(userId); // session handled by server action
         if (result.success) {
             toast({ title: 'Sucesso', description: result.message });
             router.refresh();

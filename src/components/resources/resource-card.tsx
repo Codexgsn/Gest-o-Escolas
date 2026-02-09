@@ -29,7 +29,7 @@ export default function ResourceCard({ resource, isAdmin = false, currentUserId 
       return;
     }
 
-    const result = await deleteResourceAction(resource.id, currentUserId);
+    const result = await deleteResourceAction(resource.id);
     if (result.success) {
       toast({ title: 'Sucesso', description: result.message });
       // Note: In a real app we might want to refresh the page or update state, 
@@ -94,7 +94,7 @@ export default function ResourceCard({ resource, isAdmin = false, currentUserId 
       </CardContent>
       <CardFooter className="flex justify-end space-x-2 mt-auto">
         <Button asChild className="w-full">
-          <Link href={`/dashboard/resources/${resource.id}`}>
+          <Link href={`/dashboard/reservations/new?resourceId=${resource.id}`}>
             Reservar
           </Link>
         </Button>

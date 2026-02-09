@@ -76,12 +76,6 @@ function LoginPageContent() {
               />
             </div>
             <LoginButton />
-            <div className="mt-4 text-center text-sm">
-              Não tem uma conta?{' '}
-              <Link href="/register" className="underline">
-                Cadastre-se
-              </Link>
-            </div>
           </form>
         </CardContent>
       </Card>

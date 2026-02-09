@@ -81,7 +81,7 @@ export function NewReservationForm({ resources, settings, initialResourceId, cur
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      resourceId: "",
+      resourceId: initialResourceId || "",
       description: "",
     },
   });
