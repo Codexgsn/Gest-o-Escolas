@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BookOpenCheck } from 'lucide-react';
+import { Logo } from "@/components/logo"
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -47,8 +47,8 @@ export default function ForgotPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-           <div className="mb-4 flex justify-center">
-            <BookOpenCheck className="h-12 w-12 text-primary" />
+          <div className="flex justify-center mb-8">
+            <Logo className="h-16 w-16" />
           </div>
           <CardTitle className="text-3xl font-bold">Esqueceu sua senha?</CardTitle>
           <CardDescription>
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
               Enviar Código de Redefinição
             </Button>
-             <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm">
               Lembrou sua senha?{' '}
               <Link href="/" className="underline">
                 Voltar ao Login

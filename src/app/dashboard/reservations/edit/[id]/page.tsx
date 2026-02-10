@@ -11,8 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-// Dummy current user ID. In a real app, this would come from your auth solution.
-const DUMMY_USER_ID = 'simulated-admin-id';
+// Valid admin UUID found in database. In a real app, this would come from your auth solution.
+const DUMMY_USER_ID = 'f2a33cb6-66ca-4081-b5ff-5076547744d9';
 
 // This is the main page, a Server Component
 export default async function EditReservationPage({ params }: { params: { id: string } }) {
@@ -50,10 +50,10 @@ export default async function EditReservationPage({ params }: { params: { id: st
       </CardHeader>
       <CardContent>
         {/* Pass the server-fetched data as props to the Client Component */}
-        <EditReservationForm 
-            reservation={reservation} 
-            resources={resources} 
-            settings={settings} 
+        <EditReservationForm
+          reservation={reservation}
+          resources={resources}
+          settings={settings}
         />
       </CardContent>
     </Card>

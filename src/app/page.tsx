@@ -10,8 +10,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BookOpenCheck } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Logo } from "@/components/logo"
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { useFormState, useFormStatus } from 'react-dom';
@@ -41,8 +40,8 @@ function LoginPageContent() {
       </div>
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mb-4 flex justify-center">
-            <BookOpenCheck className="h-12 w-12 text-primary" />
+          <div className="flex justify-center mb-8">
+            <Logo className="h-16 w-16" />
           </div>
           <CardTitle className="text-3xl font-bold">SchoolZenith</CardTitle>
           <CardDescription>

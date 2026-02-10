@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BookOpenCheck } from 'lucide-react';
+import { Logo } from "@/components/logo"
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -47,16 +47,16 @@ function ResetPasswordForm() {
       });
       return;
     }
-    
+
     if (password.length < 8) {
-         toast({
-            variant: "destructive",
-            title: "Senha muito curta",
-            description: "A senha deve ter pelo menos 8 caracteres.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "Senha muito curta",
+        description: "A senha deve ter pelo menos 8 caracteres.",
+      });
+      return;
     }
-    
+
     // In a real app, you would verify the code first.
     // For this simulation, we'll just attempt to reset the password.
     const result = await resetPasswordAction({ email, password });
@@ -69,7 +69,7 @@ function ResetPasswordForm() {
       });
       router.push('/');
     } else {
-       toast({
+      toast({
         variant: 'destructive',
         title: 'Erro na Redefinição',
         description: result.message,
@@ -81,8 +81,8 @@ function ResetPasswordForm() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-           <div className="mb-4 flex justify-center">
-            <BookOpenCheck className="h-12 w-12 text-primary" />
+          <div className="flex justify-center mb-8">
+            <Logo className="h-16 w-16" />
           </div>
           <CardTitle className="text-3xl font-bold">Redefinir sua Senha</CardTitle>
           <CardDescription>
@@ -101,7 +101,7 @@ function ResetPasswordForm() {
                 onChange={(e) => setCode(e.target.value)}
               />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="password">Nova Senha</Label>
               <Input
                 id="password"
@@ -112,7 +112,7 @@ function ResetPasswordForm() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-             <div className="space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
               <Input
                 id="confirmPassword"
@@ -126,7 +126,7 @@ function ResetPasswordForm() {
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
               Redefinir Senha
             </Button>
-              <div className="mt-4 text-center text-sm">
+            <div className="mt-4 text-center text-sm">
               Lembrou sua senha?{' '}
               <Link href="/" className="underline">
                 Voltar ao Login
@@ -140,9 +140,9 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <ResetPasswordForm />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
+  )
 }

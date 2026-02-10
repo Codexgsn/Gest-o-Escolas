@@ -1,6 +1,7 @@
 import AppSidebar from '@/components/app-sidebar';
 import Header from '@/components/header';
 import { getCurrentUser } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({
   children,
@@ -8,6 +9,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
+
+  if (!user) {
+    redirect('/');
+  }
+
   const userRole = user?.role;
 
   return (

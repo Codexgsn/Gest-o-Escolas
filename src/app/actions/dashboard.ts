@@ -24,21 +24,27 @@ export async function getDashboardStats() {
             db.sql`SELECT count(*) FROM reservations WHERE status = 'Confirmada' AND current_timestamp BETWEEN "startTime" AND "endTime"`,
             // Upcoming reservations (confirmed and starting in next 7 days)
             db.sql`SELECT count(*) FROM reservations WHERE status = 'Confirmada' AND "startTime" > current_timestamp AND "startTime" <= current_timestamp + interval '7 days'`,
-            // Recent activity (last 5 reservations)
+            // Recent activity (last 10 reservations)
             db.sql`
-                SELECT r.id, r.status, r."startTime", u.name as "userName", res.name as "resourceName"
+                SELECT 
+                    r.id, 
+                    r.status, 
+                    r."startTime", 
+                    r."createdAt",
+                    u.name as "userName", 
+                    res.name as "resourceName"
                 FROM reservations r
-                JOIN users u ON r."userId" = u.id
-                JOIN resources res ON r."resourceId" = res.id
-                ORDER BY r."createdAt" DESC
-                LIMIT 5
+                LEFT JOIN users u ON r."userId" = u.id
+                LEFT JOIN resources res ON r."resourceId" = res.id
+                ORDER BY r."startTime" DESC, r."createdAt" DESC
+                LIMIT 10
             `,
             // Resource usage (reservations count per resource)
             db.sql`
                 SELECT res.name, count(r.id) as reservations
                 FROM resources res
                 LEFT JOIN reservations r ON res.id = r."resourceId"
-                GROUP BY res.name
+                GROUP BY res.id, res.name
                 ORDER BY reservations DESC
                 LIMIT 5
             `,
@@ -50,7 +56,7 @@ export async function getDashboardStats() {
             `
         ]);
 
-        return {
+        const stats = {
             totalReservations: Number(reservationsCount.rows[0].count),
             totalUsers: Number(usersCount.rows[0].count),
             totalResources: Number(resourcesCount.rows[0].count),
@@ -59,8 +65,16 @@ export async function getDashboardStats() {
             recentReservations: recentReservations.rows,
             resourceUsageData: resourceUsage.rows,
             resourceTypeChartData: resourceTypes.rows.map(r => ({ name: r.type, value: Number(r.value) })),
-            bookingTrendsData: [] // TODO: Implement complex query for trends if needed, or leave empty for now
+            bookingTrendsData: []
         };
+
+        console.log('Dashboard stats fetched:', {
+            total: stats.totalReservations,
+            recent: stats.recentReservations.length,
+            upcoming: stats.upcomingReservations
+        });
+
+        return stats;
 
     } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);

@@ -2,13 +2,13 @@
 "use client";
 
 import {
-  BookOpenCheck,
   Building,
   CalendarDays,
   LayoutDashboard,
   Settings,
   Users,
 } from "lucide-react";
+import { Logo } from "./logo";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -39,27 +39,40 @@ export default function AppSidebar({ userRole }: { userRole?: string }) {
   const menuItems = allMenuItems.filter(item => !item.adminOnly || userRole === 'Admin');
 
   return (
-    <Sidebar className="border-r">
-      <SidebarHeader>
-        <div className="flex items-center gap-2">
-          <BookOpenCheck className="w-8 h-8 text-primary" />
-          <span className={cn("text-lg font-semibold", { 'sr-only': state === 'collapsed' })}>Gestão Escolar</span>
+    <Sidebar className="border-r border-sidebar-border/50 bg-sidebar-background/80 backdrop-blur-xl">
+      <SidebarHeader className="py-6 px-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-transparent">
+            <Logo className="h-10 w-10" />
+          </div>
+          <div className={cn("flex flex-col transition-opacity duration-300", { 'opacity-0 sr-only': state === 'collapsed' })}>
+            <span className="text-sm font-bold tracking-tight text-foreground">Gestão Escolar</span>
+            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Portal Administrativo</span>
+          </div>
         </div>
       </SidebarHeader>
-      <SidebarMenu className="flex-1">
+      <SidebarMenu className="flex-1 px-3 space-y-1">
         {menuItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
               asChild
               tooltip={item.label}
-              className={cn("w-full", {
-                "bg-sidebar-accent text-sidebar-accent-foreground": pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard'),
-              })}
+              className={cn(
+                "w-full h-11 transition-all duration-200 hover:bg-sidebar-accent/50 rounded-lg group",
+                {
+                  "bg-primary/10 text-primary hover:bg-primary/15 font-semibold": pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard'),
+                }
+              )}
               isActive={pathname === item.href}
             >
-              <Link href={item.href}>
-                <item.icon className="h-5 w-5" />
-                <span>{item.label}</span>
+              <Link href={item.href} className="flex items-center gap-3">
+                <item.icon className={cn(
+                  "h-5 w-5 transition-colors shrink-0",
+                  pathname === item.href ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+                )} />
+                <span className={cn("text-sm transition-opacity duration-300", { "opacity-0 sr-only": state === "collapsed" })}>
+                  {item.label}
+                </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

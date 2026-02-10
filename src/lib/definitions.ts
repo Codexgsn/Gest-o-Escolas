@@ -29,6 +29,7 @@ export type Reservation = {
   startTime: Date;
   endTime: Date;
   status: "Confirmada" | "Pendente" | "Cancelada" | string;
+  description: string | null;
   createdAt: Date;
   resourceName?: string;
   userName?: string;

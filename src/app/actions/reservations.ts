@@ -63,6 +63,7 @@ const baseReservationSchema = z.object({
     date: z.coerce.date({ required_error: "Por favor, selecione uma data." }),
     startTime: z.string({ required_error: "Por favor, selecione um horário de início." }),
     endTime: z.string({ required_error: "Por favor, selecione um horário de término." }),
+    description: z.string().optional(),
 });
 
 const reservationSchema = baseReservationSchema.refine(data => data.endTime > data.startTime, {
@@ -96,8 +97,8 @@ export async function createReservationAction(values: unknown, currentUserId: st
 
     try {
         await db.sql`
-      INSERT INTO reservations ("userId", "resourceId", "startTime", "endTime", status)
-      VALUES (${currentUserId}, ${resourceId}, ${startDateTime.toISOString()}, ${endDateTime.toISOString()}, 'Confirmada')
+      INSERT INTO reservations ("userId", "resourceId", "startTime", "endTime", status, description)
+      VALUES (${currentUserId}, ${resourceId}, ${startDateTime.toISOString()}, ${endDateTime.toISOString()}, 'Confirmada', ${validatedFields.data.description || null})
     `;
         revalidatePath('/dashboard/reservations');
         return { success: true, message: "Reserva criada com sucesso!" };
@@ -151,7 +152,8 @@ export async function updateReservationAction(values: unknown, currentUserId: st
             UPDATE reservations
             SET "resourceId" = ${resourceId}, 
                 "startTime" = ${startDateTime.toISOString()}, 
-                "endTime" = ${endDateTime.toISOString()}
+                "endTime" = ${endDateTime.toISOString()},
+                description = ${validatedFields.data.description || null}
             WHERE id = ${id}
         `;
         revalidatePath('/dashboard/reservations');

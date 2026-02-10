@@ -40,8 +40,8 @@ import type { Reservation, Resource } from "@/lib/definitions"
 import { updateReservationAction } from "@/app/actions/reservations"
 import type { SchoolSettings } from "@/app/actions/settings"
 
-// Dummy current user ID. Replace with your actual auth logic.
-const DUMMY_USER_ID = 'simulated-admin-id';
+// Valid admin UUID found in database. Replace with your actual auth logic.
+const DUMMY_USER_ID = 'f2a33cb6-66ca-4081-b5ff-5076547744d9';
 
 const formSchema = z.object({
   resourceId: z.string().min(1, { message: "Por favor, selecione um recurso." }),
@@ -86,7 +86,7 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
       date: new Date(reservation.startTime),
       startTime: format(new Date(reservation.startTime), 'HH:mm'),
       endTime: format(new Date(reservation.endTime), 'HH:mm'),
-      description: "", // Removed purpose as it's not in the DB schema anymore
+      description: reservation.description || "",
     },
   });
 

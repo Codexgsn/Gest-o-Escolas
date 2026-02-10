@@ -24,6 +24,13 @@ export async function fetchUserById(id: string): Promise<User | null> {
   noStore();
   console.log(`Fetching user with id: ${id}`);
 
+  // Basic UUID validation to prevent database errors with non-UUID strings
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(id)) {
+    console.warn(`Invalid UUID format provided: ${id}`);
+    return null;
+  }
+
   try {
     const { rows } = await sql<User>`
       SELECT id, name, email, role, avatar, "createdAt"
@@ -132,7 +139,7 @@ export async function fetchReservations(filters: {
     } else if (userId) {
       const res = await sql`
         SELECT 
-          r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r."createdAt",
+          r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r.description, r."createdAt",
           res.name as "resourceName",
           u.name as "userName"
         FROM reservations r
@@ -158,7 +165,7 @@ export async function fetchReservations(filters: {
     } else {
       const res = await sql`
         SELECT 
-          r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r."createdAt",
+          r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r.description, r."createdAt",
           res.name as "resourceName",
           u.name as "userName"
         FROM reservations r
@@ -182,7 +189,7 @@ export async function fetchReservationById(id: string): Promise<Reservation | nu
   try {
     const { rows } = await sql`
       SELECT 
-        r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r."createdAt",
+        r.id, r."resourceId", r."userId", r."startTime", r."endTime", r.status, r.description, r."createdAt",
         res.name as "resourceName",
         u.name as "userName"
       FROM reservations r

@@ -1,5 +1,5 @@
 
-'use client'
+'use server'
 
 import pool from '@/lib/db';
 import { type Resource, type User, type Reservation } from '@/lib/definitions';
@@ -8,8 +8,8 @@ import { sql } from '@vercel/postgres';
 // --- Resources ---
 export async function getResources(): Promise<Resource[]> {
     try {
-        const result = await sql<Resource>`SELECT * FROM resources`;
-        return result.rows;
+        const result = await sql`SELECT id, name, type, location, capacity, equipment, "imageUrl", tags FROM resources ORDER BY name ASC`;
+        return result.rows as any as Resource[];
     } catch (error) {
         console.error('Error fetching resources:', error);
         return [];
@@ -62,8 +62,8 @@ export async function getReservations(): Promise<Reservation[]> {
 
 export async function getReservationById(id: string): Promise<Reservation | undefined> {
     try {
-        const result = await sql<Reservation[]>`SELECT * FROM reservations WHERE id = ${id}`;
-        return result.rows[0];
+        const result = await sql`SELECT * FROM reservations WHERE id = ${id}`;
+        return result.rows[0] as any as Reservation;
     } catch (error) {
         console.error(`Error fetching reservation with id: ${id}`, error);
         return undefined;

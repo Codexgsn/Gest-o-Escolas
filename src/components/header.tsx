@@ -1,6 +1,7 @@
 'use client';
 
-import { BookOpenCheck, Menu, Search } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
+import { Logo } from './logo';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -60,7 +61,7 @@ function MobileNav({ menuItems }: { menuItems: { href: string; label: string }[]
         </SheetHeader>
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-2 p-3 border-b">
-            <BookOpenCheck className="w-8 h-8 text-primary" />
+            <Logo className="w-8 h-8" />
             <span className="text-lg font-semibold">Gestão Escolar</span>
           </div>
           <nav className="flex flex-col gap-2 p-2">
