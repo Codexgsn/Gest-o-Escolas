@@ -63,3 +63,8 @@ export async function login(prevState: any, formData: FormData) {
 
     redirect('/dashboard');
 }
+
+export async function logout() {
+    cookies().delete('session');
+    redirect('/');
+}

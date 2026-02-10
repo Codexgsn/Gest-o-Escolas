@@ -28,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { SidebarTrigger } from './ui/sidebar';
 import { usePathname } from 'next/navigation';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { logout } from '@/app/actions/auth';
 
 // Basic menu items without role filtering
 const allMenuItems = [
@@ -104,9 +105,8 @@ export default function Header({ userRole }: { userRole?: string }) {
     }
   };
 
-  const handleLogout = () => {
-    // In a real app, you would verify logout with the server here
-    router.push('/');
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
