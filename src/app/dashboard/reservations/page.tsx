@@ -37,53 +37,53 @@ export default async function ReservationsPage() {
     const currentUserId = currentUser?.id;
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4 md:space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Reservas</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Reservas</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">
                         Gerencie as reservas de recursos da escola.
                     </p>
                 </div>
                 <Button asChild>
-                    <Link href="/dashboard/reservations/new">
-                        <Plus className="mr-2 h-4 w-4" />
+                    <Link href="/dashboard/reservations/new" className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
                         Nova Reserva
                     </Link>
                 </Button>
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Histórico de Reservas</CardTitle>
-                    <CardDescription>
+                <CardHeader className="px-4 md:px-6">
+                    <CardTitle className="text-lg md:text-xl">Histórico de Reservas</CardTitle>
+                    <CardDescription className="text-sm">
                         Visualize e gerencie todas as reservas realizadas.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="mb-4 flex items-center gap-4">
+                <CardContent className="px-4 md:px-6">
+                    <div className="mb-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <div className="relative flex-1">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Buscar reservas..."
-                                className="pl-8 sm:w-[300px] md:w-[300px]"
+                                className="pl-8 w-full"
                             />
                         </div>
-                        <Button variant="outline">
-                            <CalendarDays className="mr-2 h-4 w-4" />
-                            Filtrar por Data
+                        <Button variant="outline" className="flex items-center gap-2">
+                            <CalendarDays className="h-4 w-4" />
+                            Filtrar
                         </Button>
                     </div>
-                    <div className="rounded-md border">
+                    <div className="rounded-md border overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Recurso</TableHead>
-                                    <TableHead>Solicitante</TableHead>
-                                    <TableHead>Início</TableHead>
-                                    <TableHead>Fim</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
+                                    <TableHead className="min-w-[150px]">Recurso</TableHead>
+                                    <TableHead className="min-w-[120px]">Solicitante</TableHead>
+                                    <TableHead className="min-w-[140px]">Início</TableHead>
+                                    <TableHead className="min-w-[140px]">Fim</TableHead>
+                                    <TableHead className="min-w-[100px]">Status</TableHead>
+                                    <TableHead className="text-right w-[70px]">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -94,14 +94,14 @@ export default async function ReservationsPage() {
                                     return (
                                         <TableRow key={reservation.id}>
                                             <TableCell className="font-medium">
-                                                {reservation.resourceName}
+                                                <span className="truncate block max-w-[200px]">{reservation.resourceName}</span>
                                             </TableCell>
-                                            <TableCell>{reservation.userName}</TableCell>
-                                            <TableCell>
-                                                {new Date(reservation.startTime).toLocaleString('pt-BR')}
+                                            <TableCell><span className="truncate block max-w-[150px]">{reservation.userName}</span></TableCell>
+                                            <TableCell className="text-sm">
+                                                {new Date(reservation.startTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                                             </TableCell>
-                                            <TableCell>
-                                                {new Date(reservation.endTime).toLocaleString('pt-BR')}
+                                            <TableCell className="text-sm">
+                                                {new Date(reservation.endTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
                                             </TableCell>
                                             <TableCell>
                                                 <Badge
@@ -112,6 +112,7 @@ export default async function ReservationsPage() {
                                                                 ? 'secondary'
                                                                 : 'destructive'
                                                     }
+                                                    className="text-xs"
                                                 >
                                                     {reservation.status}
                                                 </Badge>

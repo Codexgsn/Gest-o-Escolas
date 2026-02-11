@@ -183,10 +183,14 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
             control={form.control}
             name="startTime"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key={field.value}>
                 <FormLabel>Hora de Início</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o início" /></SelectTrigger></FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o início" />
+                    </SelectTrigger>
+                  </FormControl>
                   <SelectContent>{startSlots.map((time) => <SelectItem key={`start-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
                 </Select>
                 <FormMessage />
@@ -197,10 +201,14 @@ export function EditReservationForm({ reservation, resources, settings }: EditRe
             control={form.control}
             name="endTime"
             render={({ field }) => (
-              <FormItem>
+              <FormItem key={field.value}>
                 <FormLabel>Hora de Fim</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Selecione o fim" /></SelectTrigger></FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o fim" />
+                    </SelectTrigger>
+                  </FormControl>
                   <SelectContent>{endSlots.filter(time => !startTimeValue || time > startTimeValue).map((time) => <SelectItem key={`end-${time}`} value={time}>{time}</SelectItem>)}</SelectContent>
                 </Select>
                 <FormMessage />

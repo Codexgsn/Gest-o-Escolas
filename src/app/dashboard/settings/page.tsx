@@ -33,7 +33,6 @@ import {
   type SchoolSettings,
 } from '@/app/actions/settings';
 import { Trash2, PlusCircle, Wand2, Tag, X, GripVertical } from 'lucide-react';
-import { Reorder, useDragControls } from 'framer-motion';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -85,54 +84,70 @@ function ClassBlockItem({
   field,
   index,
   form,
-  removeClassBlock
+  removeClassBlock,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
+  onDrop,
+  isDragOver,
+  isDragging,
 }: {
   field: any;
   index: number;
   form: any;
-  removeClassBlock: (index: number) => void
+  removeClassBlock: (index: number) => void;
+  onDragStart: (e: React.DragEvent, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDragEnd: () => void;
+  onDrop: (e: React.DragEvent, index: number) => void;
+  isDragOver: boolean;
+  isDragging: boolean;
 }) {
-  const controls = useDragControls();
+  const itemRef = React.useRef<HTMLDivElement>(null);
 
   return (
-    <Reorder.Item
-      key={field.id}
-      value={field}
-      dragListener={false}
-      dragControls={controls}
-      dragElastic={0.1}
-      transition={{
-        type: "spring",
-        stiffness: 250,
-        damping: 25,
-        mass: 0.5
+    <div
+      ref={itemRef}
+      draggable
+      onDragStart={(e) => {
+        if (itemRef.current) {
+          const clone = itemRef.current.cloneNode(true) as HTMLElement;
+          clone.style.position = 'absolute';
+          clone.style.top = '-9999px';
+          clone.style.left = '-9999px';
+          clone.style.width = `${itemRef.current.offsetWidth}px`;
+          clone.style.opacity = '1';
+          clone.style.backgroundColor = 'hsl(var(--card))';
+          clone.style.borderRadius = '0.5rem';
+          clone.style.border = '2px solid hsl(var(--primary))';
+          clone.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.2)';
+          clone.style.transform = 'scale(1.02)';
+          document.body.appendChild(clone);
+          e.dataTransfer.setDragImage(clone, e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+          requestAnimationFrame(() => document.body.removeChild(clone));
+        }
+        onDragStart(e, index);
       }}
-      className="flex items-center gap-4 p-4 border rounded-lg bg-card shadow-sm hover:border-primary/50 relative overflow-visible"
-      whileDrag={{
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-        zIndex: 100,
-        backgroundColor: "hsl(var(--card))",
-        scale: 1.03
-      }}
-      whileTap={{ cursor: "grabbing", scale: 1.02 }}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDragEnd={onDragEnd}
+      onDrop={(e) => onDrop(e, index)}
+      className={`flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg bg-card shadow-sm hover:border-primary/50 relative transition-all duration-200 ${
+        isDragOver ? 'border-primary border-2 bg-primary/5' : ''
+      } ${isDragging ? 'opacity-40 border-dashed' : ''}`}
     >
       <div
-        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors pr-2 touch-none flex items-center justify-center h-12 w-10 -ml-2"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          controls.start(e);
-        }}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors flex items-center justify-center h-8 sm:h-12 w-full sm:w-10 sm:-ml-2 order-first sm:order-none"
       >
-        <GripVertical className="h-6 w-6" />
+        <GripVertical className="h-5 w-5 sm:h-6 sm:w-6" />
       </div>
 
-      <div className="flex-1 flex flex-col gap-3">
+      <div className="flex-1 flex flex-col gap-2 sm:gap-3">
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-mono text-xs">
             Bloco {index + 1}
           </Badge>
         </div>
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <FormField
             control={form.control}
             name={`classBlocks.${index}.startTime`}
@@ -174,13 +189,13 @@ function ClassBlockItem({
         type="button"
         variant="ghost"
         size="icon"
-        className="text-destructive hover:text-destructive hover:bg-destructive/10 self-start mt-8"
+        className="text-destructive hover:text-destructive hover:bg-destructive/10 self-end sm:self-start sm:mt-8"
         onClick={() => removeClassBlock(index)}
       >
-        <Trash2 className="h-5 w-5" />
+        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
         <span className="sr-only">Remover Bloco</span>
       </Button>
-    </Reorder.Item>
+    </div>
   );
 }
 
@@ -189,6 +204,9 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [newTag, setNewTag] = useState('');
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const scrollIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const form = useForm<z.infer<typeof settingsSchema>>({
     resolver: zodResolver(settingsSchema),
@@ -212,6 +230,61 @@ export default function SettingsPage() {
     control: form.control,
     name: 'breaks',
   });
+
+  const handleDragStart = (_e: React.DragEvent, index: number) => {
+    setDragIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+
+    // Auto-scroll quando próximo das bordas
+    const scrollThreshold = 100;
+    const scrollSpeed = 10;
+    const mouseY = e.clientY;
+    const windowHeight = window.innerHeight;
+
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+
+    if (mouseY < scrollThreshold) {
+      // Scroll para cima
+      scrollIntervalRef.current = setInterval(() => {
+        window.scrollBy({ top: -scrollSpeed, behavior: 'auto' });
+      }, 16);
+    } else if (mouseY > windowHeight - scrollThreshold) {
+      // Scroll para baixo
+      scrollIntervalRef.current = setInterval(() => {
+        window.scrollBy({ top: scrollSpeed, behavior: 'auto' });
+      }, 16);
+    }
+  };
+
+  const handleDragEnd = () => {
+    if (scrollIntervalRef.current) {
+      clearInterval(scrollIntervalRef.current);
+      scrollIntervalRef.current = null;
+    }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, toIndex: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === toIndex) {
+      handleDragEnd();
+      return;
+    }
+    const blocks = form.getValues('classBlocks') as { startTime: string; endTime: string }[];
+    const newBlocks = [...blocks];
+    const [movedBlock] = newBlocks.splice(dragIndex, 1);
+    newBlocks.splice(toIndex, 0, movedBlock);
+    replaceClassBlocks(newBlocks);
+    handleDragEnd();
+  };
 
   const resourceTags = form.watch('resourceTags') || [];
 
@@ -363,31 +436,31 @@ export default function SettingsPage() {
 
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-4 md:space-y-8 px-4 md:px-0">
 
       <Card>
-        <CardHeader>
-          <CardTitle>Configurações Avançadas</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-4 md:px-6">
+          <CardTitle className="text-xl md:text-2xl">Configurações Avançadas</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             Defina a grade de horários, tags de recursos e outras regras da instituição.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-4 md:px-6">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-8">
               <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="general">Geral</TabsTrigger>
-                  <TabsTrigger value="tags">Tags</TabsTrigger>
-                  <TabsTrigger value="breaks">Intervalos</TabsTrigger>
-                  <TabsTrigger value="blocks">Aulas</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+                  <TabsTrigger value="general" className="text-xs sm:text-sm py-2">Geral</TabsTrigger>
+                  <TabsTrigger value="tags" className="text-xs sm:text-sm py-2">Tags</TabsTrigger>
+                  <TabsTrigger value="breaks" className="text-xs sm:text-sm py-2">Intervalos</TabsTrigger>
+                  <TabsTrigger value="blocks" className="text-xs sm:text-sm py-2">Aulas</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="general" className="mt-6">
-                  <div className="space-y-8">
+                <TabsContent value="general" className="mt-4 md:mt-6">
+                  <div className="space-y-6 md:space-y-8">
                     <div>
-                      <h3 className="text-lg font-medium mb-4">Regras Gerais</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end">
+                      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Regras Gerais</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 items-end">
                         <FormField
                           control={form.control}
                           name="startTime"
@@ -436,13 +509,13 @@ export default function SettingsPage() {
                     <Separator />
 
                     <div>
-                      <h3 className="text-lg font-medium mb-4">Dias de Funcionamento</h3>
+                      <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Dias de Funcionamento</h3>
                       <FormField
                         control={form.control}
                         name="operatingDays"
                         render={() => (
                           <FormItem>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                               {daysOfWeek.map((day) => (
                                 <FormField
                                   key={day.id}
@@ -485,10 +558,10 @@ export default function SettingsPage() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="tags" className="mt-6">
+                <TabsContent value="tags" className="mt-4 md:mt-6">
                   <div>
-                    <h3 className="text-lg font-medium mb-4">Tags de Recursos</h3>
-                    <div className="flex items-center gap-2 mb-4">
+                    <h3 className="text-base md:text-lg font-medium mb-3 md:mb-4">Tags de Recursos</h3>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
                       <Input
                         placeholder="Nova tag (ex: Auditório)"
                         value={newTag}
@@ -499,8 +572,9 @@ export default function SettingsPage() {
                             handleAddTag();
                           }
                         }}
+                        className="flex-1"
                       />
-                      <Button type="button" onClick={handleAddTag}>
+                      <Button type="button" onClick={handleAddTag} className="w-full sm:w-auto">
                         <PlusCircle className="mr-2 h-4 w-4" /> Adicionar
                       </Button>
                     </div>
@@ -524,15 +598,16 @@ export default function SettingsPage() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="breaks" className="mt-6">
+                <TabsContent value="breaks" className="mt-4 md:mt-6">
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium">Intervalos</h3>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                      <h3 className="text-base md:text-lg font-medium">Intervalos</h3>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => appendBreak({ startTime: '', endTime: '' })}
+                        className="w-full sm:w-auto"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Adicionar Intervalo
@@ -542,7 +617,7 @@ export default function SettingsPage() {
                       {breakFields.map((field, index) => (
                         <div
                           key={field.id}
-                          className="flex items-center gap-4 p-4 border rounded-lg"
+                          className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg"
                         >
                           <FormField
                             control={form.control}
@@ -574,7 +649,7 @@ export default function SettingsPage() {
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="mt-6 text-destructive hover:text-destructive"
+                            className="sm:mt-6 text-destructive hover:text-destructive self-end sm:self-auto"
                             onClick={() => removeBreak(index)}
                           >
                             <Trash2 className="h-5 w-5" />
@@ -589,28 +664,24 @@ export default function SettingsPage() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="blocks" className="mt-6">
+                <TabsContent value="blocks" className="mt-4 md:mt-6">
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium">Blocos de Aula</h3>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                      <h3 className="text-base md:text-lg font-medium">Blocos de Aula</h3>
                       <Button
                         type="button"
                         onClick={handleGenerateClassBlocks}
+                        className="w-full sm:w-auto"
                       >
                         <Wand2 className="mr-2 h-4 w-4" />
                         Gerar Grade
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
+                    <p className="text-xs sm:text-sm text-muted-foreground mb-4">
                       Clique em "Gerar Grade" para preencher os blocos de aula com base nas regras acima. Você pode adicionar, remover ou editar os blocos manualmente após a geração.
                     </p>
-                    <div className="space-y-6 pt-2">
-                      <Reorder.Group
-                        axis="y"
-                        values={classBlockFields}
-                        onReorder={replaceClassBlocks}
-                        className="space-y-4"
-                      >
+                    <div className="space-y-4 md:space-y-6 pt-2">
+                      <div className="space-y-4">
                         {classBlockFields.map((field, index) => (
                           <ClassBlockItem
                             key={field.id}
@@ -618,13 +689,19 @@ export default function SettingsPage() {
                             index={index}
                             form={form}
                             removeClassBlock={removeClassBlock}
+                            onDragStart={handleDragStart}
+                            onDragOver={handleDragOver}
+                            onDragEnd={handleDragEnd}
+                            onDrop={handleDrop}
+                            isDragOver={dragOverIndex === index && dragIndex !== index}
+                            isDragging={dragIndex === index}
                           />
                         ))}
-                      </Reorder.Group>
+                      </div>
                       {(form.watch('classBlocks')?.length || 0) === 0 && (
-                        <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                          <p className="text-muted-foreground">A grade de horários está vazia.</p>
-                          <p className="text-sm text-muted-foreground">Defina suas regras e clique em "Gerar Grade".</p>
+                        <div className="text-center py-6 md:py-8 border-2 border-dashed rounded-lg">
+                          <p className="text-sm md:text-base text-muted-foreground">A grade de horários está vazia.</p>
+                          <p className="text-xs md:text-sm text-muted-foreground mt-1">Defina suas regras e clique em "Gerar Grade".</p>
                         </div>
                       )}
                       <Button
@@ -632,7 +709,7 @@ export default function SettingsPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => appendClassBlock({ startTime: '', endTime: '' })}
-                        className="mt-4"
+                        className="mt-4 w-full sm:w-auto"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Adicionar Bloco Manualmente
@@ -642,9 +719,9 @@ export default function SettingsPage() {
                 </TabsContent>
               </Tabs>
 
-              <Separator className="mt-8" />
+              <Separator className="mt-6 md:mt-8" />
 
-              <Button type="submit" size="lg">Salvar Configurações</Button>
+              <Button type="submit" size="lg" className="w-full sm:w-auto">Salvar Configurações</Button>
             </form>
           </Form>
         </CardContent>

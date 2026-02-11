@@ -45,11 +45,11 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 md:gap-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Painel de Gestão</h1>
-          <p className="text-muted-foreground">Bem-vindo de volta! Aqui está um resumo do que está acontecendo.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Painel de Gestão</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Bem-vindo de volta! Aqui está um resumo do que está acontecendo.</p>
         </div>
         <Button asChild className="shadow-premium hover:scale-105 transition-transform">
           <Link href="/dashboard/reservations/new" className="flex items-center gap-2">
@@ -179,60 +179,62 @@ export default async function DashboardPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-muted/50">
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[200px] font-semibold">Usuário</TableHead>
-                  <TableHead className="font-semibold">Recurso</TableHead>
-                  <TableHead className="font-semibold">Data</TableHead>
-                  <TableHead className="text-right font-semibold">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.recentReservations.map((reservation: any, index: number) => (
-                  <TableRow
-                    key={reservation.id}
-                    className="group transition-colors hover:bg-muted/30"
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-                          {(reservation.userName || "U")[0].toUpperCase()}
-                        </div>
-                        {reservation.userName || "Usuário Desconhecido"}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        {reservation.resourceName || "Recurso Desconhecido"}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {new Date(reservation.startTime).toLocaleDateString('pt-BR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric'
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={
-                          reservation.status === "Confirmada"
-                            ? "default"
-                            : reservation.status === "Cancelada"
-                              ? "destructive"
-                              : "secondary"
-                        }
-                        className="rounded-full px-3 py-0.5"
-                      >
-                        {reservation.status}
-                      </Badge>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="min-w-[150px] md:w-[200px] font-semibold">Usuário</TableHead>
+                    <TableHead className="min-w-[150px] font-semibold">Recurso</TableHead>
+                    <TableHead className="min-w-[120px] font-semibold">Data</TableHead>
+                    <TableHead className="text-right min-w-[100px] font-semibold">Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {stats.recentReservations.map((reservation: any, index: number) => (
+                    <TableRow
+                      key={reservation.id}
+                      className="group transition-colors hover:bg-muted/30"
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2 md:gap-3">
+                          <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0">
+                            {(reservation.userName || "U")[0].toUpperCase()}
+                          </div>
+                          <span className="truncate">{reservation.userName || "Usuário Desconhecido"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <span className="truncate">{reservation.resourceName || "Recurso Desconhecido"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(reservation.startTime).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Badge
+                          variant={
+                            reservation.status === "Confirmada"
+                              ? "default"
+                              : reservation.status === "Cancelada"
+                                ? "destructive"
+                                : "secondary"
+                          }
+                          className="rounded-full px-2 md:px-3 py-0.5 text-xs"
+                        >
+                          {reservation.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </motion.div>

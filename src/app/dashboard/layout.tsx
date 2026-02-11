@@ -17,12 +17,12 @@ export default async function DashboardLayout({
   const userRole = user?.role;
 
   return (
-    <div className="flex min-h-screen w-full flex-row">
+    <div className="flex min-h-screen w-full flex-row overflow-hidden">
       <AppSidebar userRole={userRole} />
-      <div className="flex flex-1 flex-col">
-        <div className="relative flex flex-1 flex-col items-center bg-background">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="relative flex flex-1 flex-col items-center bg-background overflow-y-auto">
           <Header userRole={userRole} />
-          <main className="w-full flex-1 p-4 sm:px-6 md:gap-8">{children}</main>
+          <main className="w-full flex-1 p-4 sm:px-6">{children}</main>
         </div>
       </div>
     </div>

@@ -102,29 +102,30 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
 
     return (
         <Tabs defaultValue="all">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
                 {tabs.map(tab => (
-                    <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+                    <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm">{tab.label}</TabsTrigger>
                 ))}
             </TabsList>
 
             {tabs.map(tab => (
                 <TabsContent key={tab.value} value={tab.value}>
                     <Card>
-                        <CardHeader>
-                            <CardTitle>{tab.label}</CardTitle>
-                            <CardDescription>Uma lista de todas as reservas {tab.label.toLowerCase()}.</CardDescription>
+                        <CardHeader className="px-4 md:px-6">
+                            <CardTitle className="text-lg md:text-xl">{tab.label}</CardTitle>
+                            <CardDescription className="text-sm">Uma lista de todas as reservas {tab.label.toLowerCase()}.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Table>
+                        <CardContent className="px-0 md:px-6">
+                            <div className="overflow-x-auto">
+                                <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Recurso</TableHead>
-                                        <TableHead>Usuário</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="hidden md:table-cell">Início</TableHead>
-                                        <TableHead className="hidden md:table-cell">Fim</TableHead>
-                                        <TableHead><span className="sr-only">Ações</span></TableHead>
+                                        <TableHead className="min-w-[150px]">Recurso</TableHead>
+                                        <TableHead className="min-w-[120px]">Usuário</TableHead>
+                                        <TableHead className="min-w-[100px]">Status</TableHead>
+                                        <TableHead className="hidden md:table-cell min-w-[150px]">Início</TableHead>
+                                        <TableHead className="hidden md:table-cell min-w-[150px]">Fim</TableHead>
+                                        <TableHead className="w-[70px]"><span className="sr-only">Ações</span></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -133,11 +134,11 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
                                             const canModify = isAdmin || currentUserId === res.userId;
                                             return (
                                                 <TableRow key={res.id}>
-                                                    <TableCell className="font-medium">{res.resourceName}</TableCell>
-                                                    <TableCell>{res.userName}</TableCell>
-                                                    <TableCell><Badge variant={statusVariant(res.status)}>{res.status}</Badge></TableCell>
-                                                    <TableCell className="hidden md:table-cell">{new Date(res.startTime).toLocaleString()}</TableCell>
-                                                    <TableCell className="hidden md:table-cell">{new Date(res.endTime).toLocaleString()}</TableCell>
+                                                    <TableCell className="font-medium"><span className="truncate block max-w-[200px]">{res.resourceName}</span></TableCell>
+                                                    <TableCell><span className="truncate block max-w-[150px]">{res.userName}</span></TableCell>
+                                                    <TableCell><Badge variant={statusVariant(res.status)} className="text-xs">{res.status}</Badge></TableCell>
+                                                    <TableCell className="hidden md:table-cell text-sm">{new Date(res.startTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
+                                                    <TableCell className="hidden md:table-cell text-sm">{new Date(res.endTime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</TableCell>
                                                     <TableCell>
                                                         <AlertDialog>
                                                             <DropdownMenu>
@@ -182,7 +183,8 @@ export function ReservationsList({ reservations, currentUserId, isAdmin }: Reser
                                         </TableRow>
                                     )}
                                 </TableBody>
-                            </Table>
+                                </Table>
+                            </div>
                         </CardContent>
                         <CardFooter>
                             <div className="text-xs text-muted-foreground">

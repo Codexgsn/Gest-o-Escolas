@@ -12,14 +12,17 @@ const loginSchema = z.object({
 });
 
 export async function login(prevState: any, formData: FormData) {
+    console.log('Login action started for:', formData.get('email'));
     const result = loginSchema.safeParse(Object.fromEntries(formData));
 
     if (!result.success) {
-        return {
+        const errorResponse = {
             success: false,
             message: 'Dados inválidos.',
             errors: result.error.flatten().fieldErrors,
         };
+        console.log('Returning failure response (invalid data):', errorResponse);
+        return errorResponse;
     }
 
     const { email, password } = result.data;
@@ -29,19 +32,23 @@ export async function login(prevState: any, formData: FormData) {
         const user = rows[0];
 
         if (!user) {
-            return {
+            const errorResponse = {
                 success: false,
                 message: 'Credenciais inválidas.',
             };
+            console.log('Returning failure response (user not found):', errorResponse);
+            return errorResponse;
         }
 
         const passwordsMatch = await compare(password, user.password);
 
         if (!passwordsMatch) {
-            return {
+            const errorResponse = {
                 success: false,
                 message: 'Credenciais inválidas.',
             };
+            console.log('Returning failure response (password mismatch):', errorResponse);
+            return errorResponse;
         }
 
         // Set a session cookie (simplified for this example)
@@ -49,10 +56,14 @@ export async function login(prevState: any, formData: FormData) {
         cookies().set('session', user.id, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            maxAge: 60 * 60 * 24 * 7, // 1 week
             path: '/',
         });
 
+        console.log('Login successful, returning success response');
+        return {
+            success: true,
+            message: 'Login realizado com sucesso!',
+        };
     } catch (error) {
         console.error('Login error:', error);
         return {
@@ -60,8 +71,6 @@ export async function login(prevState: any, formData: FormData) {
             message: 'Ocorreu um erro ao tentar fazer login.',
         };
     }
-
-    redirect('/dashboard');
 }
 
 export async function logout() {

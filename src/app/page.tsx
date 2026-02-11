@@ -10,28 +10,43 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from "@/components/logo"
-import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
+import { Logo } from "@/components/logo";
+import { useToast } from "@/hooks/use-toast";
 import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { login } from '@/app/actions/auth';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 // O conteúdo da página de login foi movido para este componente
 function LoginPageContent() {
   const { toast } = useToast();
+  const router = useRouter();
   const [state, formAction] = useFormState(login, null);
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
+    console.log('LoginPageContent state changed:', state);
     if (state?.success === false) {
+      console.log('Triggering error toast:', state.message);
       toast({
         variant: "destructive",
         title: "Erro no login",
         description: state.message,
       });
+    } else if (state?.success === true && !hasRedirected.current) {
+      console.log('Triggering success toast:', state.message);
+      hasRedirected.current = true;
+      toast({
+        title: "Sucesso",
+        description: state.message,
+      });
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 1000);
     }
-  }, [state, toast]);
+  }, [state, toast, router]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 relative">
@@ -78,10 +93,20 @@ function LoginPageContent() {
                 placeholder="SuaSenha"
               />
             </div>
+            {state?.success === false && (
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md animate-in fade-in slide-in-from-top-1">
+                {state.message || "Erro desconhecido. Tente novamente."}
+              </div>
+            )}
             <LoginButton />
           </form>
         </CardContent>
       </Card>
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 left-4 p-2 bg-black/80 text-white text-[10px] rounded pointer-events-none z-50">
+          State: {JSON.stringify(state)}
+        </div>
+      )}
     </div>
   );
 }

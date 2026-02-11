@@ -1,6 +1,6 @@
 'use client';
 
-import { Menu, Search } from 'lucide-react';
+import { Menu, Search, LayoutDashboard, CalendarDays, Building, Users, Settings } from 'lucide-react';
 import { Logo } from './logo';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -39,6 +39,15 @@ const allMenuItems = [
   { href: "/dashboard/settings", label: "Configurações" },
 ];
 
+// Menu items with icons
+const menuItemsWithIcons: Record<string, any> = {
+  "/dashboard": LayoutDashboard,
+  "/dashboard/reservations": CalendarDays,
+  "/dashboard/resources": Building,
+  "/dashboard/users": Users,
+  "/dashboard/settings": Settings,
+};
+
 function MobileNav({ menuItems }: { menuItems: { href: string; label: string }[] }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -66,19 +75,24 @@ function MobileNav({ menuItems }: { menuItems: { href: string; label: string }[]
             <span className="text-lg font-semibold">Gestão Escolar</span>
           </div>
           <nav className="flex flex-col gap-2 p-2">
-            {menuItems.map((item) => (
-              <Button
-                key={item.href}
-                asChild
-                variant={pathname.startsWith(item.href) ? "secondary" : "ghost"}
-                className="justify-start"
-                onClick={() => setOpen(false)}
-              >
-                <Link href={item.href}>
-                  {item.label}
-                </Link>
-              </Button>
-            ))}
+            {menuItems.map((item) => {
+              const IconComponent = menuItemsWithIcons[item.href];
+              
+              return (
+                <Button
+                  key={item.href}
+                  asChild
+                  variant={pathname.startsWith(item.href) ? "secondary" : "ghost"}
+                  className="justify-start gap-3"
+                  onClick={() => setOpen(false)}
+                >
+                  <Link href={item.href} className="flex items-center gap-3">
+                    {IconComponent && <IconComponent className="h-5 w-5" />}
+                    {item.label}
+                  </Link>
+                </Button>
+              );
+            })}
           </nav>
         </div>
       </SheetContent>
@@ -112,27 +126,27 @@ export default function Header({ userRole }: { userRole?: string }) {
   return (
     <>
       <header
-        className='sticky top-4 z-10 w-[95%] rounded-lg border bg-card/95 backdrop-blur-sm shadow-lg mb-4'
+        className='sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur-sm shadow-sm'
       >
-        <div className="flex items-center gap-4 p-4 sm:px-6">
+        <div className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4">
 
           <MobileNav menuItems={filteredMenuItems} />
 
           <SidebarTrigger className="hidden md:flex flex-shrink-0" />
 
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Pesquisar recursos..."
-                className="w-full rounded-lg bg-card pl-8 md:w-[200px] lg:w-[336px]"
+                placeholder="Pesquisar..."
+                className="w-full rounded-lg bg-card pl-8 text-sm"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </form>
           </div>
-          <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

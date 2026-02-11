@@ -65,7 +65,7 @@ function UserRow({
 
   return (
     <TableRow data-state={isSelected ? 'selected' : ''}>
-      <TableCell className="p-4">
+      <TableCell className="p-3 md:p-4">
         <Checkbox
           checked={isSelected}
           onCheckedChange={(value) => onToggleSelect(user.id, !!value)}
@@ -73,21 +73,21 @@ function UserRow({
         />
       </TableCell>
       <TableCell className="font-medium">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
+        <div className="flex items-center gap-2 md:gap-3">
+          <Avatar className="h-8 w-8 md:h-9 md:w-9 flex-shrink-0">
             <AvatarImage src={user.avatar || undefined} alt="Avatar" />
             <AvatarFallback>{user.name?.charAt(0) ?? 'U'}</AvatarFallback>
           </Avatar>
-          <div className="grid gap-0.5">
-            <span className="font-medium">{user.name}</span>
-            <span className="text-xs text-muted-foreground">{user.email}</span>
+          <div className="grid gap-0.5 min-w-0">
+            <span className="font-medium truncate">{user.name}</span>
+            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
           </div>
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={roleVariant(user.role)}>{user.role}</Badge>
+        <Badge variant={roleVariant(user.role)} className="text-xs">{user.role}</Badge>
       </TableCell>
-      <TableCell className="hidden md:table-cell">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+      <TableCell className="hidden md:table-cell text-sm">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('pt-BR') : 'N/A'}</TableCell>
       <TableCell>
         <AlertDialog>
           <DropdownMenu>
@@ -174,15 +174,15 @@ export function UsersClientView() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-4 md:px-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
-            <CardTitle>Gerenciamento de Usuários</CardTitle>
-            <CardDescription>Gerencie todos os usuários, seus papéis e permissões.</CardDescription>
+            <CardTitle className="text-lg md:text-xl">Gerenciamento de Usuários</CardTitle>
+            <CardDescription className="text-sm">Gerencie todos os usuários, seus papéis e permissões.</CardDescription>
           </div>
           {numSelected > 0 && (
             <AlertDialog>
-              <AlertDialogTrigger asChild><Button variant="destructive">Excluir ({numSelected})</Button></AlertDialogTrigger>
+              <AlertDialogTrigger asChild><Button variant="destructive" size="sm" className="w-full sm:w-auto">Excluir ({numSelected})</Button></AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
@@ -199,42 +199,41 @@ export function UsersClientView() {
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="p-4">
-                <Checkbox
-                  checked={rowCount > 0 && numSelected === rowCount}
-                  // indeterminate prop not supported by Shadcn Checkbox directly, usually handled by ref or separate state if needed
-                  // but standard HTML checkbox supports it via ref. 
-                  // For now, let's just ignore visual indeterminate state or check if we can pass "data-state"
-                  onCheckedChange={(value) => handleSelectAll(!!value)}
-                  aria-label="Select all"
-                />
-              </TableHead>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Papel</TableHead>
-              <TableHead className="hidden md:table-cell">Criado em</TableHead>
-              <TableHead><span className="sr-only">Ações</span></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length > 0 ? (
-              users.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  onDelete={handleDeleteUser}
-                  isSelected={selectedUserIds.includes(user.id)}
-                  onToggleSelect={handleToggleSelect}
-                />
-              ))
-            ) : (
-              <TableRow><TableCell colSpan={5} className="text-center">Nenhum usuário encontrado.</TableCell></TableRow>
-            )}
-          </TableBody>
-        </Table>
+      <CardContent className="px-0 md:px-6">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="p-3 md:p-4 w-[50px]">
+                  <Checkbox
+                    checked={rowCount > 0 && numSelected === rowCount}
+                    onCheckedChange={(value) => handleSelectAll(!!value)}
+                    aria-label="Select all"
+                  />
+                </TableHead>
+                <TableHead className="min-w-[200px]">Usuário</TableHead>
+                <TableHead className="min-w-[100px]">Papel</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[120px]">Criado em</TableHead>
+                <TableHead className="w-[70px]"><span className="sr-only">Ações</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.length > 0 ? (
+                users.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    onDelete={handleDeleteUser}
+                    isSelected={selectedUserIds.includes(user.id)}
+                    onToggleSelect={handleToggleSelect}
+                  />
+                ))
+              ) : (
+                <TableRow><TableCell colSpan={5} className="text-center">Nenhum usuário encontrado.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );
