@@ -100,68 +100,81 @@ function ClassBlockItem({
       value={field}
       dragListener={false}
       dragControls={controls}
-      layout
+      dragElastic={0.1}
       transition={{
         type: "spring",
-        stiffness: 500,
-        damping: 30,
-        mass: 1
+        stiffness: 250,
+        damping: 25,
+        mass: 0.5
       }}
-      className="flex items-center gap-4 p-4 border rounded-lg bg-card shadow-sm hover:border-primary/50 relative"
+      className="flex items-center gap-4 p-4 border rounded-lg bg-card shadow-sm hover:border-primary/50 relative overflow-visible"
       whileDrag={{
         boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-        zIndex: 50,
-        backgroundColor: "hsl(var(--card))"
+        zIndex: 100,
+        backgroundColor: "hsl(var(--card))",
+        scale: 1.03
       }}
+      whileTap={{ cursor: "grabbing", scale: 1.02 }}
     >
       <div
-        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors pr-2 touch-none flex items-center justify-center h-10 w-8"
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-primary transition-colors pr-2 touch-none flex items-center justify-center h-12 w-10 -ml-2"
         onPointerDown={(e) => {
           e.preventDefault();
           controls.start(e);
         }}
       >
-        <GripVertical className="h-5 w-5" />
+        <GripVertical className="h-6 w-6" />
       </div>
-      <FormField
-        control={form.control}
-        name={`classBlocks.${index}.startTime`}
-        render={({ field: formField }) => (
-          <FormItem className="flex-1">
-            <FormLabel>Início da Aula</FormLabel>
-            <FormControl>
-              <Input
-                type="time"
-                {...formField}
-                className="bg-background"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name={`classBlocks.${index}.endTime`}
-        render={({ field: formField }) => (
-          <FormItem className="flex-1">
-            <FormLabel>Fim da Aula</FormLabel>
-            <FormControl>
-              <Input
-                type="time"
-                {...formField}
-                className="bg-background"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+
+      <div className="flex-1 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-mono text-xs">
+            Bloco {index + 1}
+          </Badge>
+        </div>
+        <div className="flex flex-col md:flex-row gap-4">
+          <FormField
+            control={form.control}
+            name={`classBlocks.${index}.startTime`}
+            render={({ field: formField }) => (
+              <FormItem className="flex-1">
+                <FormLabel className="text-xs">Início</FormLabel>
+                <FormControl>
+                  <Input
+                    type="time"
+                    {...formField}
+                    className="bg-background h-9"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name={`classBlocks.${index}.endTime`}
+            render={({ field: formField }) => (
+              <FormItem className="flex-1">
+                <FormLabel className="text-xs">Fim</FormLabel>
+                <FormControl>
+                  <Input
+                    type="time"
+                    {...formField}
+                    className="bg-background h-9"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="mt-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+        className="text-destructive hover:text-destructive hover:bg-destructive/10 self-start mt-8"
         onClick={() => removeClassBlock(index)}
       >
         <Trash2 className="h-5 w-5" />
@@ -591,11 +604,11 @@ export default function SettingsPage() {
                     <p className="text-sm text-muted-foreground mb-4">
                       Clique em "Gerar Grade" para preencher os blocos de aula com base nas regras acima. Você pode adicionar, remover ou editar os blocos manualmente após a geração.
                     </p>
-                    <div className="space-y-4">
+                    <div className="space-y-6 pt-2">
                       <Reorder.Group
                         axis="y"
                         values={classBlockFields}
-                        onReorder={(newOrder) => replaceClassBlocks(newOrder)}
+                        onReorder={replaceClassBlocks}
                         className="space-y-4"
                       >
                         {classBlockFields.map((field, index) => (
