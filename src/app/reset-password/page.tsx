@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Logo } from "@/components/logo"
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -103,9 +104,8 @@ function ResetPasswordForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Nova Senha</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 placeholder="Nova senha (mínimo 8 caracteres)"
                 required
                 value={password}
@@ -114,9 +114,8 @@ function ResetPasswordForm() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
-                type="password"
                 placeholder="Confirme a nova senha"
                 required
                 value={confirmPassword}

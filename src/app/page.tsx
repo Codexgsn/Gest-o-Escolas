@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Logo } from "@/components/logo";
 import { useToast } from "@/hooks/use-toast";
@@ -85,10 +86,9 @@ function LoginPageContent() {
                   Esqueceu a senha?
                 </Link>
               </div>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 required
                 placeholder="SuaSenha"
               />
